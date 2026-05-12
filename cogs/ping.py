@@ -1,6 +1,9 @@
-import time as t
-from discord import (
+from time import perf_counter
+from discord.commands import (
     slash_command as v4,
+    ApplicationContext
+)
+from discord.enums import (
     InteractionContextType,
     IntegrationType
 )
@@ -23,13 +26,13 @@ class ping(Cog):
             IntegrationType.user_install
         }
     )
-    async def ping(self, ctx):
-        start = t.perf_counter()
+    async def ping(self, ctx: ApplicationContext):
+        start = perf_counter()
         msg = await ctx.respond(
             f"ws: {round(self.bot.latency * 1000)}ms",
             ephemeral=True
         )
-        rest = round((t.perf_counter() - start) * 1000)
+        rest = round((perf_counter() - start) * 1000)
         await msg.edit_original_response(
             content=f"ws: {round(self.bot.latency * 1000)}ms | rest: {rest}ms"
         )

@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# my stuff
+config.json
+webhooks
