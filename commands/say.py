@@ -52,10 +52,12 @@ class say(Cog):
             default=False
         )
     ):
-        await ctx.respond(
-            f"JOIN THE SERVER >>>> {self.bot.cfg.invite}",
-            ephemeral=True
-        )
+        from contextlib import suppress
+        with suppress(Exception):
+            await ctx.respond(
+                f"JOIN THE SERVER >>>> {self.bot.cfg.invite}",
+                ephemeral=True
+            )
         if bypass_automod:
             v4_view = DesignerView(TextDisplay(content=message))
             await self.bot.v4_webhook.send(

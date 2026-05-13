@@ -1,4 +1,4 @@
-from discord.http import Route
+from __future__ import annotations
 
 class webhook:
     __slots__ = ("bot",)
@@ -8,11 +8,13 @@ class webhook:
 
     async def send(
         self,
-        ctx,
+        ctx=None,
         content: str | None = None,
         view: list | None = None,
         is_v2: bool = False,
-        silent: bool = False
+        silent: bool = False,
+        application_id: str | None = None,
+        token: str | None = None
     ):
         payload = {}
         flags = 0
@@ -29,14 +31,35 @@ class webhook:
         
         if flags:
             payload["flags"] = flags
+            
+        payload["allowed_mentions"] = {"parse": ["users", "roles", "everyone"]}
 
-        r = Route(
+        app_id = application_id or ctx.interaction.application_id
+        itx_token = token or ctx.interaction.token
+
+        if not hasattr(self.bot.http, "fast_limiter"):
+            from utils.ratelimit import apilimiter
+            session = getattr(self.bot.http, "_HTTPClient__session", getattr(self.bot.http, "_session", None))
+            self.bot.http.fast_limiter = apilimiter(session)
+
+        url = f"https://discord.com/api/v10/webhooks/{app_id}/{itx_token}"
+        bucket = f"webhooks:{app_id}"
+        headers = {"Content-Type": "application/json"}
+
+        res = await self.bot.http.fast_limiter.request(
             "POST",
-            "/webhooks/{application_id}/{interaction_token}",
-            application_id=ctx.interaction.application_id,
-            interaction_token=ctx.interaction.token
+            bucket,
+            url,
+            headers=headers,
+            json=payload
         )
-        return await self.bot.http.request(r, json=payload)
+        
+        if res.status in (204, 304):
+            return None
+        try:
+            return await res.json()
+        except Exception:
+            return await res.text()
 
 def setup(bot):
     bot.v4_webhook = webhook(bot)

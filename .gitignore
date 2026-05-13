@@ -10,5 +10,8 @@ wheels/
 .venv
 
 # my stuff
-config.json
-webhooks
+*.json
+*.bin
+*.msgpack
+cache/
+webhooks/
