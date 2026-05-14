@@ -9,9 +9,13 @@ wheels/
 # Virtual environments
 .venv
 
-# my stuff
+# data
 *.json
 *.bin
 *.msgpack
+*.database
+*.database-shm
+*.database-wal
 cache/
 webhooks/
+isb/

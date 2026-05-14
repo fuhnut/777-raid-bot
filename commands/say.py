@@ -1,5 +1,5 @@
 from discord.commands import (
-    slash_command as v4,
+    slash_command as command,
     Option,
     ApplicationContext
 )
@@ -17,7 +17,7 @@ class say(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @v4(
+    @command(
         name="say",
         description="send a message through the bot",
         contexts={

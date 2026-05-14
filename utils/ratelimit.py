@@ -1,42 +1,80 @@
 from __future__ import annotations
 import logging
+import asyncio
+import os
+import mmap
 from time import time
-from asyncio import sleep, Lock
+from asyncio import sleep, Lock, to_thread
 from aiohttp import ClientSession, ClientResponse
 from typing import Any
-from utils.cache import diskstore
-from msgspec import Struct as struct
-
-class routebucket(
-    struct,
-    kw_only=True
-):
-    remaining: int = 1
-    reset: float = 0.0
+from pathlib import Path
+from msgspec.msgpack import encode, decode
+from models.ratelimit import routebucket
 
 class apilimiter:
     __slots__ = (
-        "session",
-        "store",
+        "http",
+        "buckets",
         "locks",
         "global_lock",
         "total_lock",
-        "count",
-        "last_sec"
+        "history",
+        "path",
+        "loop_task"
     )
 
-    def __init__(self, session: ClientSession):
-        self.session = session
-        self.store = diskstore(
-            filepath="ratelimits.bin",
-            limit=10000,
-            mode="lru"
+    @property
+    def session(self) -> ClientSession:
+        return getattr(
+            self.http, 
+            "_HTTPClient__session", 
+            getattr(self.http, "_session", None)
         )
+
+    def __init__(self, http: Any):
+        self.http = http
+        self.path = Path("data/ratelimits.bin")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.buckets: dict[str, routebucket] = {}
+        self._load_mmap()
         self.locks: dict[str, Lock] = {}
         self.global_lock = Lock()
         self.total_lock = Lock()
-        self.count = 0
-        self.last_sec = time()
+        self.history: list[float] = []
+        self.loop_task = None
+
+    async def _flush_loop(self):
+        while True:
+            await sleep(5.0)
+            await self._sync_to_disk()
+
+    def _load_mmap(self):
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return
+        try:
+            fd = os.open(self.path, os.O_RDONLY)
+            try:
+                with mmap.mmap(fd, 0, access=mmap.ACCESS_READ) as mm:
+                    data = decode(mm, type=dict[str, routebucket])
+                    self.buckets.update(data)
+            finally:
+                os.close(fd)
+        except Exception:
+            pass
+
+    async def _sync_to_disk(self):
+        try:
+            temp_path = self.path.with_suffix(f".{os.getpid()}.tmp")
+            data = encode(self.buckets)
+            def _write():
+                with open(temp_path, "wb") as f:
+                    f.write(data)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(temp_path, self.path)
+            await to_thread(_write)
+        except Exception:
+            pass
 
     def _get_lock(self, route: str) -> Lock:
         if route not in self.locks:
@@ -47,24 +85,20 @@ class apilimiter:
         self,
         b: routebucket,
         route: str,
-        res: ClientResponse,
-        lock: Lock
+        res: ClientResponse
     ) -> None:
         retry = res.headers.get("retry-after")
         is_global = res.headers.get("x-ratelimit-global")
         logging.warning(f"429 | route: {route} | global: {is_global} | retry: {retry}s")
-        
-        delay = float(retry) if retry else 1.0
+        delay = float(retry) if retry else 2.5
+        b.limit = max(1, b.limit - 1)
         b.remaining = 0
         b.reset = time() + delay
-        await self.store.set(route, b, 3600.0)
-        
         if is_global:
             async with self.global_lock:
-                await sleep(delay + 0.5)
+                await sleep(delay + 0.3)
         else:
-            lock.release()
-            await sleep(delay + 0.5)
+            await sleep(delay + 0.3)
 
     async def request(
         self,
@@ -73,53 +107,54 @@ class apilimiter:
         url: str,
         **kwargs: Any
     ) -> ClientResponse:
+        if not self.loop_task:
+            self.loop_task = asyncio.create_task(self._flush_loop())
+            
         lock = self._get_lock(route)
-        
         while True:
-            async with self.global_lock:
-                pass
-
             async with self.total_lock:
                 now = time()
-                if now - self.last_sec > 1.0:
-                    self.count = 0
-                    self.last_sec = now
-                
-                if self.count >= 50:
-                    await sleep(max(0.0, (self.last_sec + 1.0) - now))
-                    self.count = 0
-                    self.last_sec = time()
-                
-                self.count += 1
-                
-            await lock.acquire()
-            b = await self.store.get(route, routebucket)
-            if not b:
-                b = routebucket()
-                
-            now = time()
-            if b.remaining <= 0 and now < (b.reset + 0.5):
-                lock.release()
-                await sleep((b.reset + 0.5) - now)
-                continue
+                self.history = [t for t in self.history if now - t < 1.0]
+                if len(self.history) >= 45:
+                    await sleep(max(0.0, 1.15 - (now - self.history[0])))
+                    continue
+                self.history.append(now)
 
-            res = await self.session.request(method, url, **kwargs)
-            
-            rem = res.headers.get("x-ratelimit-remaining")
-            after = res.headers.get("x-ratelimit-reset-after")
-            
-            if rem:
-                b.remaining = int(rem)
-            else:
+            async with lock:
+                b = self.buckets.get(route)
+                if not b:
+                    init_limit = 5 if route.startswith("webhooks") else 1
+                    b = routebucket(limit=init_limit, remaining=init_limit, reset=0.0)
+                    self.buckets[route] = b
+                
+                now = time()
+                if now >= b.reset:
+                    b.remaining = b.limit
+                    b.reset = now + (2.2 if route.startswith("webhooks") else 1.1)
+
+                if b.remaining <= 0:
+                    await sleep(max(0.0, b.reset - now))
+                    continue
+
+                async with self.global_lock:
+                    pass
+
+                res = await self.session.request(method, url, **kwargs)
+                b.last_req = time()
                 b.remaining -= 1
                 
-            if after:
-                b.reset = time() + float(after)
+                lim = res.headers.get("x-ratelimit-limit")
+                rem = res.headers.get("x-ratelimit-remaining")
+                after = res.headers.get("x-ratelimit-reset-after")
+                
+                if lim:
+                    b.limit = int(lim)
+                if rem:
+                    b.remaining = int(rem)
+                if after:
+                    b.reset = time() + float(after)
 
-            if res.status == 429:
-                await self._handle_429(b, route, res, lock)
-                continue
-
-            await self.store.set(route, b, 3600.0)
-            lock.release()
-            return res
+                if res.status == 429:
+                    await self._handle_429(b, route, res)
+                    continue
+                return res

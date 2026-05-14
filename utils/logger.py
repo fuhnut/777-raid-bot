@@ -26,6 +26,7 @@ def setup():
     }
     install(
         level="INFO",
-        fmt="[%(ram)s] %(levelname)s: %(message)s",
+        fmt="%(asctime)s [%(ram)s] %(levelname)s: %(message)s",
+        datefmt="%H:%M:%S",
         level_styles=styles
     )

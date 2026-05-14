@@ -4,6 +4,7 @@ import asyncio
 import logging
 import uvloop
 from pathlib import Path
+from contextlib import suppress
 from msgspec.json import decode as msg_decode
 from discord.flags import (
     Intents,
@@ -15,19 +16,24 @@ from models.config import config
 from utils.logger import setup as log_setup
 from utils.webhook import setup as webhook_setup
 from utils.ratelimit import apilimiter
+from utils.responses import setup as responses_setup
 import discord.http
+import discord.errors
+from urllib.parse import quote
 
 async def v4_http(
     self,
     route, **kwargs
 ):
     if not hasattr(self, "fast_limiter"):
-        session = getattr(
-            self,
-            "_HTTPClient__session",
-            getattr(self, "_session", None)
+        self.fast_limiter = apilimiter(self)
+        
+    if getattr(self, "_session", None) is None:
+        import aiohttp
+        self._session = aiohttp.ClientSession(
+            connector=self.connector,
+            ws_response_class=discord.http.DiscordClientWebSocketResponse
         )
-        self.fast_limiter = apilimiter(session)
     
     headers = kwargs.pop("headers", {})
     if self.token:
@@ -35,7 +41,6 @@ async def v4_http(
         
     reason = kwargs.pop("reason", None)
     if reason:
-        from urllib.parse import quote
         headers["X-Audit-Log-Reason"] = quote(reason, safe="/ ")
         
     kwargs.pop("locale", None)
@@ -60,7 +65,6 @@ async def v4_http(
     if 300 > res.status >= 200:
         return data
         
-    import discord.errors
     if res.status == 401:
         raise discord.errors.LoginFailure("improper token has been passed.")
     elif res.status == 403:
@@ -77,6 +81,9 @@ class v4(Bot):
         super().__init__(*args, **kwargs)
         self.cfg = None
 
+    async def setup_hook(self):
+        pass
+
     async def on_ready(self):
         logging.info(f"logged in as {self.user}")
         for cmd in self.application_commands:
@@ -84,7 +91,13 @@ class v4(Bot):
 
 def main():
     uvloop.install()
-    asyncio.set_event_loop(asyncio.new_event_loop())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    from utils.db import db
+    loop.run_until_complete(db.setup())
+    
+    responses_setup()
     log_setup()
     data = Path("config.json").read_bytes()
     cfg = msg_decode(
@@ -106,6 +119,17 @@ def main():
     webhook_setup(client)
     for path in Path("commands").glob("*.py"):
         client.load_extension(f"commands.{path.stem}")
+    
+    @client.event
+    async def on_interaction(itx: discord.Interaction):
+        if itx.type == discord.InteractionType.component:
+            if itx.custom_id == "v4:ui:ok":
+                with suppress(Exception):
+                    await itx.response.edit_message(view=None)
+                    await itx.delete_original_response()
+                    return
+        await client.process_application_commands(itx)
+
     client.run(cfg.token)
 
 if __name__ == "__main__":

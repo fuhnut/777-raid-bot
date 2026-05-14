@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from time import perf_counter
 from discord.commands import (
-    slash_command as v4,
+    slash_command as command,
     ApplicationContext
 )
 from discord.enums import (
@@ -15,7 +15,7 @@ class ping(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @v4(
+    @command(
         name="ping",
         description="check the bots latency",
         contexts={
