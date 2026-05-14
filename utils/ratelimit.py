@@ -87,18 +87,23 @@ class apilimiter:
         route: str,
         res: ClientResponse
     ) -> None:
-        retry = res.headers.get("retry-after")
+        try:
+            data = await res.json()
+            retry = data.get("retry_after", res.headers.get("retry-after"))
+        except Exception:
+            retry = res.headers.get("retry-after")
+            
         is_global = res.headers.get("x-ratelimit-global")
         logging.warning(f"429 | route: {route} | global: {is_global} | retry: {retry}s")
         delay = float(retry) if retry else 2.5
         b.limit = max(1, b.limit - 1)
         b.remaining = 0
-        b.reset = time() + delay
+        new_reset = time() + delay
+        if new_reset > b.reset:
+            b.reset = new_reset
         if is_global:
             async with self.global_lock:
                 await sleep(delay + 0.3)
-        else:
-            await sleep(delay + 0.3)
 
     async def request(
         self,
@@ -112,49 +117,64 @@ class apilimiter:
             
         lock = self._get_lock(route)
         while True:
-            async with self.total_lock:
-                now = time()
-                self.history = [t for t in self.history if now - t < 1.0]
-                if len(self.history) >= 45:
-                    await sleep(max(0.0, 1.15 - (now - self.history[0])))
-                    continue
-                self.history.append(now)
+            if not route.startswith("webhooks"):
+                async with self.total_lock:
+                    now = time()
+                    self.history = [t for t in self.history if now - t < 1.0]
+                    if len(self.history) >= 45:
+                        await sleep(max(0.0, 1.15 - (now - self.history[0])))
+                        continue
+                    self.history.append(now)
 
+            sleep_time = 0.0
             async with lock:
                 b = self.buckets.get(route)
                 if not b:
-                    init_limit = 5 if route.startswith("webhooks") else 1
+                    init_limit = 4 if route.startswith("webhooks") else 1
                     b = routebucket(limit=init_limit, remaining=init_limit, reset=0.0)
                     self.buckets[route] = b
                 
                 now = time()
                 if now >= b.reset:
                     b.remaining = b.limit
-                    b.reset = now + (2.2 if route.startswith("webhooks") else 1.1)
+                    b.reset = now + (2.5 if route.startswith("webhooks") else 1.1)
 
                 if b.remaining <= 0:
-                    await sleep(max(0.0, b.reset - now))
-                    continue
+                    sleep_time = max(0.0, b.reset - now) + 0.3
+                else:
+                    b.remaining -= 1
+                    b.last_req = time()
 
-                async with self.global_lock:
-                    pass
+            if sleep_time > 0:
+                await sleep(sleep_time)
+                continue
 
-                res = await self.session.request(method, url, **kwargs)
-                b.last_req = time()
-                b.remaining -= 1
+            async with self.global_lock:
+                pass
+
+            res = await self.session.request(method, url, **kwargs)
+            
+            lim = res.headers.get("x-ratelimit-limit")
+            rem = res.headers.get("x-ratelimit-remaining")
+            after = res.headers.get("x-ratelimit-reset-after")
+            
+            if lim or rem or after or res.status == 429:
+                async with lock:
+                    if lim:
+                        b.limit = int(lim) - (1 if route.startswith("webhooks") else 0)
+                    if rem:
+                        new_rem = int(rem)
+                        if new_rem < b.remaining:
+                            b.remaining = new_rem
+                    if after:
+                        new_reset = time() + float(after) + 0.25
+                        if new_reset > b.reset:
+                            b.reset = new_reset
+
+                    if res.status == 429:
+                        await self._handle_429(b, route, res)
+            
+            if res.status == 429:
+                continue
                 
-                lim = res.headers.get("x-ratelimit-limit")
-                rem = res.headers.get("x-ratelimit-remaining")
-                after = res.headers.get("x-ratelimit-reset-after")
-                
-                if lim:
-                    b.limit = int(lim)
-                if rem:
-                    b.remaining = int(rem)
-                if after:
-                    b.reset = time() + float(after)
-
-                if res.status == 429:
-                    await self._handle_429(b, route, res)
-                    continue
-                return res
+            return res

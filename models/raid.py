@@ -7,3 +7,4 @@ class raidstate(
 ):
     silent: bool = False
     bypass: bool = False
+    message: str | None = None
