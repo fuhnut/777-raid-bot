@@ -17,6 +17,7 @@ from utils.logger import setup as log_setup
 from utils.webhook import setup as webhook_setup
 from utils.ratelimit import apilimiter
 from utils.responses import setup as responses_setup
+from utils.bio import update_bio
 import discord.http
 import discord.errors
 from urllib.parse import quote
@@ -86,6 +87,7 @@ class v4(Bot):
 
     async def on_ready(self):
         logging.info(f"logged in as {self.user}")
+        await update_bio(self)
         for cmd in self.application_commands:
             logging.info(f"synced command: /{cmd.name}")
 

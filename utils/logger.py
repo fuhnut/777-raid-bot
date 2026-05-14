@@ -15,7 +15,9 @@ def setup():
         record = factory(*args, **kwargs)
         proc = Process(getpid())
         ram = proc.memory_info().rss / 1024 / 1024
-        record.ram = f"{ram:.2f} MB"
+        cpu = proc.cpu_percent()
+        record.ram = f"{ram:.2f} mb"
+        record.cpu = f"{cpu:.1f}%"
         return record
 
     setLogRecordFactory(create_record)
@@ -26,7 +28,7 @@ def setup():
     }
     install(
         level="INFO",
-        fmt="%(asctime)s [%(ram)s] %(levelname)s: %(message)s",
+        fmt="%(asctime)s [%(ram)s | %(cpu)s] %(levelname)s: %(message)s",
         datefmt="%H:%M:%S",
         level_styles=styles
     )
