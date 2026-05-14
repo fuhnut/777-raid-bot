@@ -11,5 +11,4 @@ dependencies = [
     "psutil",
     "coloredlogs",
     "zstandard",
-    "aiolibsql>=0.2.8",
 ]
