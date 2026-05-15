@@ -19,7 +19,7 @@ class db:
             limit=5000,
             mode="lru"
         )
-        logging.info(f"v4store (jsonb) engine initialized at {cls.base_path}")
+        logging.info(f"{cls.base_path}")
 
     @classmethod
     async def get(

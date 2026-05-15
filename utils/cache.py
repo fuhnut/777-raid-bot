@@ -17,6 +17,8 @@ class diskstore:
         limit: int,
         mode: str
     ):
+        if not filepath.startswith("data/cache/"):
+            filepath = f"data/cache/{filepath}"
         self.path = Path(filepath)
         self.path.parent.mkdir(
             parents=True,

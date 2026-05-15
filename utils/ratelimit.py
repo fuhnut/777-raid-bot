@@ -33,7 +33,7 @@ class apilimiter:
 
     def __init__(self, http: Any):
         self.http = http
-        self.path = Path("data/ratelimits.bin")
+        self.path = Path("data/cache/ratelimits.bin")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.buckets: dict[str, routebucket] = {}
         self._load_mmap()
