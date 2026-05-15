@@ -13,11 +13,13 @@ from discord.flags import (
 from discord.mentions import AllowedMentions
 from discord.ext.commands import Bot
 from models.config import config
+from models.blacklist import blacklistdata
 from utils.logger import setup as log_setup
 from utils.webhook import setup as webhook_setup
 from utils.ratelimit import apilimiter
 from utils.responses import setup as responses_setup
 from utils.bio import update_bio
+from utils.db import db
 import discord.http
 import discord.errors
 from urllib.parse import quote
@@ -83,7 +85,13 @@ class v4(Bot):
         self.cfg = None
 
     async def setup_hook(self):
-        pass
+        self.blacklist = blacklistdata()
+        self.loop.create_task(self._refresh_blacklist())
+
+    async def _refresh_blacklist(self):
+        while not self.is_closed():
+            self.blacklist = await db.get(0, blacklistdata, ttl=None)
+            await asyncio.sleep(15)
 
     async def on_ready(self):
         logging.info(f"logged in as {self.user}")
@@ -130,6 +138,14 @@ def main():
                     await itx.response.edit_message(view=None)
                     await itx.delete_original_response()
                     return
+
+        bl = getattr(client, "blacklist", None)
+        if bl and itx.type != discord.InteractionType.auto_complete:
+            if itx.user and itx.user.id in bl.users:
+                return await itx.error("SON YOU ARE BLACKLISTED")
+            if itx.guild_id and itx.guild_id in bl.servers:
+                return await itx.error("SON THIS SERVER IS BLACKLISTED")
+
         await client.process_application_commands(itx)
 
     client.run(cfg.token)

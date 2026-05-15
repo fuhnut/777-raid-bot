@@ -38,6 +38,12 @@ class userinfo(Cog):
             name="user",
             description="the user to inspect",
             required=False
+        ),
+        ephemeral: Option(
+            bool,
+            name="ephemeral",
+            description="hide the message?",
+            default=True
         )
     ):
         user = target or ctx.user
@@ -92,7 +98,7 @@ class userinfo(Cog):
                 *components,
                 timeout=None
             ),
-            ephemeral=True
+            ephemeral=ephemeral
         )
 
 def setup(bot):
