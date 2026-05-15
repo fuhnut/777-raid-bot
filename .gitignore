@@ -11,11 +11,8 @@ wheels/
 
 # data
 *.json
+*.jsonb
 *.bin
-*.msgpack
-*.database
-*.database-shm
-*.database-wal
 cache/
 webhooks/
 isb/

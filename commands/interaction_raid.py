@@ -226,7 +226,7 @@ class interactionraid(Cog):
                 ).to_component_dict()
             ]
 
-        sem = asyncio.Semaphore(2)
+        sem = asyncio.Semaphore(3)
 
         async def _dispatch(t: raidtoken):
             async with sem:
@@ -240,7 +240,6 @@ class interactionraid(Cog):
                         application_id=t.id,
                         token=t.token
                     )
-                await asyncio.sleep(state.cooldown)
 
         tasks = [
             _dispatch(t)

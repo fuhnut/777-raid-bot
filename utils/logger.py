@@ -13,11 +13,15 @@ def setup():
 
     def create_record(*args, **kwargs):
         record = factory(*args, **kwargs)
-        proc = Process(getpid())
-        ram = proc.memory_info().rss / 1024 / 1024
-        cpu = proc.cpu_percent()
-        record.ram = f"{ram:.2f} mb"
-        record.cpu = f"{cpu:.1f}%"
+        try:
+            proc = Process(getpid())
+            ram = proc.memory_info().rss / 1024 / 1024
+            cpu = proc.cpu_percent()
+            record.ram = f"{ram:.2f} mb"
+            record.cpu = f"{cpu:.1f}%"
+        except Exception:
+            record.ram = "0.00 mb"
+            record.cpu = "0.0%"
         return record
 
     setLogRecordFactory(create_record)

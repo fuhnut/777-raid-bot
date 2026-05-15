@@ -113,6 +113,7 @@ class diskstore:
             )
             if len(self.cache) > self.limit:
                 self.cache.popitem(last=False)
+        asyncio.create_task(self._sync())
 
     async def get(
         self,
@@ -156,6 +157,7 @@ class diskstore:
         await self._ensure_loop()
         async with self.lock:
             self.cache.pop(key, None)
+        asyncio.create_task(self._sync())
 
     async def clear(self) -> None:
         await self._ensure_loop()

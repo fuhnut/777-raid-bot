@@ -117,14 +117,13 @@ class apilimiter:
             
         lock = self._get_lock(route)
         while True:
-            if not route.startswith("webhooks"):
-                async with self.total_lock:
-                    now = time()
-                    self.history = [t for t in self.history if now - t < 1.0]
-                    if len(self.history) >= 45:
-                        await sleep(max(0.0, 1.15 - (now - self.history[0])))
-                        continue
-                    self.history.append(now)
+            async with self.total_lock:
+                now = time()
+                self.history = [t for t in self.history if now - t < 1.0]
+                if len(self.history) >= 45:
+                    await sleep(max(0.01, 1.1 - (now - self.history[0])))
+                    continue
+                self.history.append(now)
 
             sleep_time = 0.0
             async with lock:

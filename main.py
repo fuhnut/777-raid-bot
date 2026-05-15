@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import asyncio
 import logging
 import uvloop
@@ -104,16 +103,16 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
-    from utils.db import db
-    loop.run_until_complete(db.setup())
-    
-    responses_setup()
-    log_setup()
     data = Path("config.json").read_bytes()
     cfg = msg_decode(
         data,
         type=config
     )
+    
+    responses_setup()
+    log_setup()
+    from utils.db import db
+    loop.run_until_complete(db.setup(cfg.database_key))
     intents = Intents.default()
     intents.members = True
     client = v4(
