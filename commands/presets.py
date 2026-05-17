@@ -1,4 +1,8 @@
-import discord
+from discord import (
+    Interaction,
+    ApplicationContext,
+    InteractionType
+)
 import logging
 from discord.ext.commands import Cog
 from discord.commands import slash_command as command
@@ -47,7 +51,7 @@ class add_modal(Modal):
         self.add_item(self.name)
         self.add_item(self.message)
 
-    async def callback(self, itx: discord.Interaction):
+    async def callback(self, itx: Interaction):
         user = await db.get(itx.user.id, UserData)
         
         if len(user.presets) >= 10 and self.name.value not in user.presets:
@@ -90,7 +94,7 @@ class remove_modal(DesignerModal):
             )
         )
 
-    async def callback(self, itx: discord.Interaction):
+    async def callback(self, itx: Interaction):
         if not self.select.values:
             return await itx.warn("no selection made")
             
@@ -107,7 +111,7 @@ class remove_modal(DesignerModal):
             
         await itx.success(f"preset '**{name}**' removed.")
 
-class presets(Cog):
+class _7(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -124,7 +128,7 @@ class presets(Cog):
             InteractionContextType.private_channel
         }
     )
-    async def setpresetmessage(self, ctx: discord.ApplicationContext):
+    async def setpresetmessage(self, ctx: ApplicationContext):
         components = [
             Container(
                 Section(
@@ -166,8 +170,8 @@ class presets(Cog):
         )
 
     @Cog.listener()
-    async def on_interaction(self, itx: discord.Interaction):
-        if itx.type != discord.InteractionType.component:
+    async def on_interaction(self, itx: Interaction):
+        if itx.type != InteractionType.component:
             return
             
         cid = itx.custom_id
@@ -228,4 +232,4 @@ class presets(Cog):
             )
 
 def setup(bot):
-    bot.add_cog(presets(bot))
+    bot.add_cog(_7(bot))

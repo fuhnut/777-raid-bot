@@ -1,4 +1,9 @@
-import discord
+from discord import (
+    Interaction,
+    ApplicationContext,
+    PartialEmoji,
+    ButtonStyle
+)
 from discord.ui import (
     DesignerView,
     Container,
@@ -6,13 +11,13 @@ from discord.ui import (
     TextDisplay,
     Button
 )
-from discord import ButtonStyle
 
 async def _respond_custom(
-    ctx: discord.ApplicationContext | discord.Interaction,
+    ctx: ApplicationContext | Interaction,
     content: str,
     emoji: str,
-    color: int
+    color: int,
+    ephemeral: bool = True
 ):
     components = [
         Container(
@@ -20,7 +25,7 @@ async def _respond_custom(
                 TextDisplay(content=content),
                 accessory=Button(
                     style=ButtonStyle.secondary,
-                    emoji=discord.PartialEmoji.from_str(emoji),
+                    emoji=PartialEmoji.from_str(emoji),
                     custom_id="v4:ui:ok",
                 ),
             ),
@@ -30,48 +35,64 @@ async def _respond_custom(
     
     view = DesignerView(*components, timeout=None)
     
-    if isinstance(ctx, discord.Interaction):
+    msg = None
+    if isinstance(ctx, Interaction):
         if ctx.response.is_done():
-            await ctx.followup.send(view=view, ephemeral=True)
+            msg = await ctx.followup.send(view=view, ephemeral=ephemeral)
         else:
-            await ctx.response.send_message(view=view, ephemeral=True)
+            await ctx.response.send_message(view=view, ephemeral=ephemeral)
+            msg = await ctx.original_response()
     else:
         if ctx.response.is_done():
-            await ctx.followup.send(view=view, ephemeral=True)
+            msg = await ctx.followup.send(view=view, ephemeral=ephemeral)
         else:
-            await ctx.respond(view=view, ephemeral=True)
+            res = await ctx.respond(view=view, ephemeral=ephemeral)
+            msg = await res.original_response()
 
-async def success(self, content: str):
+    if msg and hasattr(ctx, "bot") and hasattr(ctx.bot, "db"):
+        import asyncio
+        itx = getattr(ctx, "interaction", ctx)
+        asyncio.create_task(
+            ctx.bot.db.track_message(
+                str(msg.id),
+                str(itx.application_id),
+                itx.token,
+                itx.channel_id,
+                itx.user.id
+            )
+        )
+
+async def success(self, content: str, ephemeral: bool = True):
     await _respond_custom(
         self,
         content,
         "<:approve:1484984864825409557>",
-        0x2ecc71
+        0x2ecc71,
+        ephemeral
     )
 
-async def warn(self, content: str):
+async def warn(self, content: str, ephemeral: bool = True):
     await _respond_custom(
         self,
         content,
         "<:warning:1484984862489313367>",
-        0xf1c40f
+        0xf1c40f,
+        ephemeral
     )
 
-async def error(self, content: str):
+async def error(self, content: str, ephemeral: bool = True):
     await _respond_custom(
         self,
         content,
         "<:deny:1484984838581780652>",
-        0xe74c3c
+        0xe74c3c,
+        ephemeral
     )
 
 def setup():
-    # monkeypatch ApplicationContext
-    discord.ApplicationContext.success = success
-    discord.ApplicationContext.warn = warn
-    discord.ApplicationContext.error = error
-    
-    # monkeypatch Interaction
-    discord.Interaction.success = success
-    discord.Interaction.warn = warn
-    discord.Interaction.error = error
+    ApplicationContext.success = success
+    ApplicationContext.warn = warn
+    ApplicationContext.error = error
+    Interaction.success = success
+    Interaction.warn = warn
+    Interaction.error = error

@@ -13,7 +13,7 @@ from discord.ui import (
 )
 from discord.ext.commands import Cog
 
-class say(Cog):
+class _10(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -74,4 +74,4 @@ class say(Cog):
         )
 
 def setup(bot):
-    bot.add_cog(say(bot))
+    bot.add_cog(_10(bot))

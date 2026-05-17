@@ -1,12 +1,14 @@
 import re
 import random
-import discord
+import asyncio
 from pathlib import Path
 from discord.ext.commands import Cog
 from discord import (
     ButtonStyle,
     SeparatorSpacingSize,
-    InteractionType
+    InteractionType,
+    Interaction,
+    ui
 )
 from discord.enums import (
     InteractionContextType,
@@ -58,34 +60,52 @@ class floodview(DesignerView):
 
     async def dispatch(
         self,
-        itx: discord.Interaction,
+        itx: Interaction,
         count: int,
         respond: bool,
         state: raidstate
     ):
+        p = self._get_payload(state)
         if respond:
-            if state.bypass:
-                await itx.response.defer(ephemeral=True)
+            is_v2 = p.pop("is_v2", False)
+            view_dict = p.pop("view", None)
+            if view_dict:
+                p["view"] = ui.View.from_dict(view_dict[0])
+            if not itx.response.is_done():
+                await itx.response.send_message(**p)
             else:
-                p = self._get_payload(state)
-                await itx.response.send_message(content=p["content"])
-                count -= 1
+                await itx.edit_original_response(**p)
+            
+            msg = await itx.original_response()
+            asyncio.create_task(
+                self.bot.db.track_message(
+                    str(msg.id),
+                    str(itx.application_id),
+                    itx.token,
+                    itx.channel_id,
+                    itx.user.id
+                )
+            )
+            p["is_v2"] = is_v2
+            if view_dict: p["view"] = view_dict
         else:
-            await itx.response.defer(ephemeral=True)
-        import asyncio
+            if not itx.response.is_done():
+                await itx.response.defer(ephemeral=True)
+            await self.bot.v4_webhook.send(ctx=itx, silent=state.silent, **p)
+        
         tasks = []
-        for _ in range(count):
-            p = self._get_payload(state)
+        for _ in range(count - 1):
             tasks.append(
                 self.bot.v4_webhook.send(
                     ctx=itx,
                     silent=state.silent,
-                    **p
+                    **self._get_payload(state)
                 )
             )
-        await asyncio.gather(*tasks)
+        if tasks:
+            await asyncio.gather(*tasks)
 
-class flood(Cog):
+class _3(Cog):
     def __init__(
         self,
         bot
@@ -103,7 +123,7 @@ class flood(Cog):
 
     @command(
         name="flood",
-        description="spam a custom message",
+        description="flood the channel",
         contexts={
             InteractionContextType.guild,
             InteractionContextType.bot_dm,
@@ -120,7 +140,7 @@ class flood(Cog):
         message: Option(
             str,
             name="message",
-            description="the message to spam",
+            description="message to flood",
             required=True
         ),
         silent: Option(
@@ -137,18 +157,15 @@ class flood(Cog):
         )
     ):
         state = raidstate(
+            message=message,
             silent=silent,
-            bypass=bypass_automod,
-            message=message
+            bypass=bypass_automod
         )
-        await self.states.set(
-            f"{ctx.channel_id}:{ctx.user.id}",
-            state,
-            3600.0
-        )
+        await self.states.set(f"{ctx.channel_id}:{ctx.user.id}", state, 3600.0)
+
         components = [
             Container(
-                TextDisplay(content=f"spamming: {message[:50]}..."),
+                TextDisplay(content="flood"),
                 Separator(
                     divider=True,
                     spacing=SeparatorSpacingSize.small,
@@ -168,48 +185,28 @@ class flood(Cog):
             ),
         ]
         await ctx.respond(
-            view=DesignerView(
-                *components,
-                timeout=None
-            ),
+            view=DesignerView(*components, timeout=None),
             ephemeral=True
         )
 
     @Cog.listener()
-    async def on_interaction(
-        self,
-        itx: discord.Interaction
-    ):
+    async def on_interaction(self, itx: Interaction):
         if itx.type != InteractionType.component:
             return
+            
         cid = itx.custom_id
         view = floodview(self.bot)
-        if cid not in (
-            view.btn5,
-            view.btn6
-        ):
+        
+        if cid not in (view.btn5, view.btn6):
             return
+
         key = f"{itx.channel_id}:{itx.user.id}"
-        state = await self.states.get(
-            key,
-            raidstate
-        )
-        if not state or not state.message:
-            return
+        state = await self.states.get(key, raidstate) or raidstate()
+        
         if cid == view.btn5:
-            await view.dispatch(
-                itx,
-                5,
-                False,
-                state
-            )
+            await view.dispatch(itx, 5, False, state)
         elif cid == view.btn6:
-            await view.dispatch(
-                itx,
-                6,
-                True,
-                state
-            )
+            await view.dispatch(itx, 6, True, state)
 
 def setup(bot):
-    bot.add_cog(flood(bot))
+    bot.add_cog(_3(bot))

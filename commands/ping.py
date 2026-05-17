@@ -11,7 +11,7 @@ from discord.enums import (
 )
 from discord.ext.commands import Cog
 
-class ping(Cog):
+class _6(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -43,4 +43,4 @@ class ping(Cog):
             )
 
 def setup(bot):
-    bot.add_cog(ping(bot))
+    bot.add_cog(_6(bot))

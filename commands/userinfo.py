@@ -13,7 +13,7 @@ from discord.ui import (
     Thumbnail
 )
 from discord import InteractionContextType, IntegrationType, User
-class userinfo(Cog):
+class _12(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -102,4 +102,4 @@ class userinfo(Cog):
         )
 
 def setup(bot):
-    bot.add_cog(userinfo(bot))
+    bot.add_cog(_12(bot))

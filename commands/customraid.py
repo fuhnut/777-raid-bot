@@ -56,13 +56,22 @@ class customraidview(DesignerView):
         }
 
     async def dispatch(self, itx: Interaction, count: int, respond: bool, state: raidstate):
-        if respond:
-            if state.bypass:
-                await itx.response.defer(ephemeral=True)
-            else:
-                p = self._get_payload(state)
-                await itx.response.send_message(content=p["content"])
-                count -= 1
+        if respond and state.bypass:
+            await itx.response.defer(ephemeral=True)
+        elif respond:
+            p = self._get_payload(state)
+            await itx.response.send_message(content=p["content"])
+            count -= 1
+            msg = await itx.original_response()
+            asyncio.create_task(
+                self.bot.db.track_message(
+                    str(msg.id),
+                    str(itx.application_id),
+                    itx.token,
+                    itx.channel_id,
+                    itx.user.id
+                )
+            )
         else:
             await itx.response.defer(ephemeral=True)
             
@@ -78,7 +87,7 @@ class customraidview(DesignerView):
             )
         await asyncio.gather(*tasks)
 
-class customraid(Cog):
+class _2(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.states = diskstore(
@@ -198,4 +207,4 @@ class customraid(Cog):
             await view.dispatch(itx, 6, True, state)
 
 def setup(bot):
-    bot.add_cog(customraid(bot))
+    bot.add_cog(_2(bot))

@@ -177,3 +177,9 @@ class apilimiter:
                 continue
                 
             return res
+
+    async def close(self):
+        if self.loop_task:
+            self.loop_task.cancel()
+        await self._sync_to_disk()
+

@@ -1,6 +1,6 @@
 import time
 import psutil
-import discord
+from discord import __version__
 from discord.ext.commands import Cog
 from discord.commands import (
     slash_command as command,
@@ -19,7 +19,7 @@ from discord import (
     IntegrationType
 )
 
-class about(Cog):
+class _1(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -47,7 +47,7 @@ class about(Cog):
         
         stats = (
             "about bot\n\n"
-            f"**pycord ver** {discord.__version__}\n"
+            f"**pycord ver** {__version__}\n"
             f"**uptime:** {int(h)}h {int(m)}m {int(s)}s\n"
             f"**cpu:** {cpu}%\n"
             f"**ram:** {ram:.2f} mb"
@@ -74,4 +74,4 @@ class about(Cog):
         )
 
 def setup(bot):
-    bot.add_cog(about(bot))
+    bot.add_cog(_1(bot))

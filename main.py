@@ -11,6 +11,21 @@ from discord.flags import (
 )
 from discord.mentions import AllowedMentions
 from discord.ext.commands import Bot
+from discord.http import (
+    HTTPClient,
+    DiscordClientWebSocketResponse
+)
+from discord.errors import (
+    LoginFailure,
+    Forbidden,
+    NotFound,
+    HTTPException
+)
+from discord import (
+    Interaction,
+    InteractionType,
+    ApplicationContext
+)
 from models.config import config
 from models.blacklist import blacklistdata
 from utils.logger import setup as log_setup
@@ -19,8 +34,6 @@ from utils.ratelimit import apilimiter
 from utils.responses import setup as responses_setup
 from utils.bio import update_bio
 from utils.db import db
-import discord.http
-import discord.errors
 from urllib.parse import quote
 
 async def v4_http(
@@ -34,7 +47,7 @@ async def v4_http(
         import aiohttp
         self._session = aiohttp.ClientSession(
             connector=self.connector,
-            ws_response_class=discord.http.DiscordClientWebSocketResponse
+            ws_response_class=DiscordClientWebSocketResponse
         )
     
     headers = kwargs.pop("headers", {})
@@ -68,20 +81,27 @@ async def v4_http(
         return data
         
     if res.status == 401:
-        raise discord.errors.LoginFailure("improper token has been passed.")
+        raise LoginFailure("improper token has been passed.")
     elif res.status == 403:
-        raise discord.errors.Forbidden(res, data)
+        raise Forbidden(res, data)
     elif res.status == 404:
-        raise discord.errors.NotFound(res, data)
+        raise NotFound(res, data)
     else:
-        raise discord.errors.HTTPException(res, data)
+        raise HTTPException(res, data)
 
-discord.http.HTTPClient.request = v4_http
+HTTPClient.request = v4_http
 
-class v4(Bot):
+class __Nigger__(Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cfg = None
+
+    async def close(self):
+        if hasattr(self.http, "fast_limiter"):
+            await self.http.fast_limiter.close()
+        await db.close()
+        await super().close()
+
 
     async def setup_hook(self):
         self.blacklist = blacklistdata()
@@ -90,7 +110,7 @@ class v4(Bot):
     async def _refresh_blacklist(self):
         while not self.is_closed():
             self.blacklist = await db.get(0, blacklistdata, ttl=None)
-            await asyncio.sleep(15)
+            await asyncio.sleep(5)
 
     async def on_ready(self):
         logging.info(f"logged in as {self.user}")
@@ -115,7 +135,7 @@ def main():
     loop.run_until_complete(db.setup(cfg.database_key))
     intents = Intents.default()
     intents.members = True
-    client = v4(
+    client = __Nigger__(
         command_prefix="!",
         intents=intents,
         member_cache_flags=MemberCacheFlags.none(),
@@ -125,13 +145,14 @@ def main():
         allowed_mentions=AllowedMentions.all()
     )
     client.cfg = cfg
+    client.db = db
     webhook_setup(client)
     for path in Path("commands").glob("*.py"):
         client.load_extension(f"commands.{path.stem}")
     
     @client.event
-    async def on_interaction(itx: discord.Interaction):
-        if itx.type == discord.InteractionType.component:
+    async def on_interaction(itx: Interaction):
+        if itx.type == InteractionType.component:
             if itx.custom_id == "v4:ui:ok":
                 with suppress(Exception):
                     await itx.response.edit_message(view=None)
@@ -139,13 +160,17 @@ def main():
                     return
 
         bl = getattr(client, "blacklist", None)
-        if bl and itx.type != discord.InteractionType.auto_complete:
+        if bl and itx.type != InteractionType.auto_complete:
             if itx.user and itx.user.id in bl.users:
                 return await itx.error("SON YOU ARE BLACKLISTED")
             if itx.guild_id and itx.guild_id in bl.servers:
                 return await itx.error("SON THIS SERVER IS BLACKLISTED")
 
         await client.process_application_commands(itx)
+
+    @client.event
+    async def on_application_command(ctx: ApplicationContext):
+        logging.info(f"{ctx.user} used /{ctx.command.name}")
 
     client.run(cfg.token)
 

@@ -1,12 +1,14 @@
 import mmap
 import random
-import discord
+import asyncio
 from discord.ext.commands import Cog
 from discord import (
     ButtonStyle,
     SeparatorSpacingSize,
     InteractionType,
-    MediaGalleryItem
+    MediaGalleryItem,
+    Interaction,
+    ui
 )
 from discord.enums import (
     InteractionContextType,
@@ -30,6 +32,10 @@ from utils.cache import diskstore
 from models.thug import thugstate
 from contextlib import suppress
 
+def _read_gif(mm: mmap.mmap, offset: int) -> str:
+    mm.seek(offset)
+    return mm.readline().decode().strip()
+
 class thugview(DesignerView):
     offsets: list[int] | None = None
 
@@ -43,29 +49,30 @@ class thugview(DesignerView):
     def _index(self):
         if thugview.offsets is not None:
             return
-        with open("gifs.txt", "rb") as f:
-            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-                thugview.offsets = [0]
-                pos = mm.find(b"\n")
-                while pos != -1:
-                    thugview.offsets.append(pos + 1)
-                    pos = mm.find(b"\n", pos + 1)
+        f = open("gifs.txt", "rb")
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        thugview.offsets = [0]
+        pos = mm.find(b"\n")
+        while pos != -1:
+            thugview.offsets.append(pos + 1)
+            pos = mm.find(b"\n", pos + 1)
+        mm.close()
+        f.close()
 
     def _get_payload(self, state: thugstate):
-        gifs = []
-        with open("gifs.txt", "rb") as f:
-            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-                for off in random.sample(thugview.offsets, 3):
-                    mm.seek(off)
-                    line = mm.readline().decode().strip()
-                    if line:
-                        gifs.append(line)
+        f = open("gifs.txt", "rb")
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        try:
+            raw = [_read_gif(mm, o) for o in random.sample(thugview.offsets, 3)]
+            gifs = [g for g in raw if g]
+        finally:
+            mm.close()
+            f.close()
 
         if not state.bypass:
             content = f"@everyone @here {self.bot.cfg.invite}\n" + "\n".join(gifs)
             return {"content": content, "is_v2": False}
 
-        # bypass mode uses cv2
         items = [MediaGalleryItem(url=g) for g in gifs]
         layout = Container(
             MediaGallery(*items),
@@ -82,30 +89,55 @@ class thugview(DesignerView):
 
     async def dispatch(
         self,
-        itx: discord.Interaction,
+        itx: Interaction,
         count: int,
         respond: bool,
         state: thugstate
     ):
-        if respond:
-            if state.bypass:
-                await itx.response.defer(ephemeral=True)
-            else:
-                p = self._get_payload(state)
-                await itx.response.send_message(content=p["content"])
-                count -= 1
-        else:
-            await itx.response.defer(ephemeral=True)
+        p = self._get_payload(state)
+        view_dict = p.pop("view", None)
+        is_v2 = p.pop("is_v2", False)
         
-        for _ in range(count):
-            p = self._get_payload(state)
-            await self.bot.v4_webhook.send(
-                ctx=itx,
-                silent=state.silent,
-                **p
-            )
+        if respond and view_dict:
+            p["view"] = ui.View.from_dict(view_dict[0])
 
-class thug(Cog):
+        if respond and not itx.response.is_done():
+            await itx.response.send_message(**p)
+        elif respond:
+            await itx.edit_original_response(**p)
+        elif not itx.response.is_done():
+            await itx.response.defer(ephemeral=True)
+
+        if respond:
+            msg = await itx.original_response()
+            asyncio.create_task(
+                self.bot.db.track_message(
+                    str(msg.id),
+                    str(itx.application_id),
+                    itx.token,
+                    itx.channel_id,
+                    itx.user.id
+                )
+            )
+            p["is_v2"] = is_v2
+            if view_dict: p["view"] = view_dict
+        else:
+            await self.bot.v4_webhook.send(ctx=itx, silent=state.silent, **p)
+
+        tasks = []
+        for _ in range(count - 1):
+            tasks.append(
+                self.bot.v4_webhook.send(
+                    ctx=itx,
+                    silent=state.silent,
+                    **self._get_payload(state)
+                )
+            )
+        
+        if tasks:
+            await asyncio.gather(*tasks)
+
+class _11(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.states = diskstore(
@@ -180,7 +212,7 @@ class thug(Cog):
         )
 
     @Cog.listener()
-    async def on_interaction(self, itx: discord.Interaction):
+    async def on_interaction(self, itx: Interaction):
         if itx.type != InteractionType.component:
             return
             
@@ -199,4 +231,4 @@ class thug(Cog):
             await view.dispatch(itx, 6, True, state)
 
 def setup(bot):
-    bot.add_cog(thug(bot))
+    bot.add_cog(_11(bot))

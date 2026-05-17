@@ -9,14 +9,14 @@ resolution-markers = [
 
 [[package]]
 name = "aiodns"
-version = "4.0.0"
+version = "4.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pycares" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/10/da/97235e953109936bfeda62c1f9f1a7c5652d4dc49f2b5911f9ae1043afa9/aiodns-4.0.0.tar.gz", hash = "sha256:17be26a936ba788c849ba5fd20e0ba69d8c46e6273e846eb5430eae2630ce5b1", size = 26204, upload-time = "2026-01-10T22:33:27.211Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/70/2047b454e8210a19876c263b801a4a1b3649f48af044bd076be468a8bd65/aiodns-4.0.3.tar.gz", hash = "sha256:33c53dc0e83826a18d6feb3f99df7bf520c0e79ac6ede0daf9aa7af8ffe81358", size = 29036, upload-time = "2026-05-16T03:13:11.9Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/60/14ac40c03e8a26216e4f2642497b776e52f9e3214e4fd537628829bbb082/aiodns-4.0.0-py3-none-any.whl", hash = "sha256:a188a75fb8b2b7862ac8f84811a231402fb74f5b4e6f10766dc8a4544b0cf989", size = 11334, upload-time = "2026-01-10T22:33:25.65Z" },
+    { url = "https://files.pythonhosted.org/packages/59/ad/4823d93835c0ab2d53d41860edb57fbd83eca4cf156f57ae32504c4a4603/aiodns-4.0.3-py3-none-any.whl", hash = "sha256:9c13842cfefe638283dfc14b8ff0e545202e7acd8c6f38d38dfa2011eecb9a26", size = 12377, upload-time = "2026-05-16T03:13:10.782Z" },
 ]
 
 [[package]]
@@ -154,51 +154,6 @@ speedups = [
     { name = "backports-zstd", marker = "python_full_version < '3.14' and platform_python_implementation == 'CPython'" },
     { name = "brotli", marker = "platform_python_implementation == 'CPython'" },
     { name = "brotlicffi", marker = "platform_python_implementation != 'CPython'" },
-]
-
-[[package]]
-name = "aiolibsql"
-version = "0.2.8"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d1/b2/b0316c556c0e4996128586bf992aab59cb5ec28b78dba4429aaf99712fa7/aiolibsql-0.2.8.tar.gz", hash = "sha256:878786d1cdca781d7622a9784e8aa36f0d867dab3e3cde3df948b1f0b26da70a", size = 42977, upload-time = "2026-02-27T19:41:27.2Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/22/24b746b96605f938d01bbc1244f2357cc95d4a05286f418fcdf0c55f785c/aiolibsql-0.2.8-cp310-cp310-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:7476d079d2e8772ca7614e3708d8af498917745a2d138f285fb846751609eba7", size = 10059065, upload-time = "2026-02-27T20:27:27.759Z" },
-    { url = "https://files.pythonhosted.org/packages/bb/07/6f7b5654c32b8e0678482885f9819480c58d32f29e7e48c2b48f7f252252/aiolibsql-0.2.8-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:8c1c9598599d3f9c6cd5f5502d57795af6015692b8a295314c29715782be3394", size = 5129831, upload-time = "2026-02-27T20:27:30.373Z" },
-    { url = "https://files.pythonhosted.org/packages/96/29/271af51536bf28c9743a3394f02c4133ee49220c4607df0192018158be8d/aiolibsql-0.2.8-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:49c5ac822e7ed8930ffc5201b2b20b46726dba9bb050f65257279b3a4b888c53", size = 4957450, upload-time = "2026-02-27T20:27:32.706Z" },
-    { url = "https://files.pythonhosted.org/packages/76/8a/ffbee5abfd166db4d8b3c971fd0d0b5f92b68d5cb14705b599b9dacce9ba/aiolibsql-0.2.8-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2321741e4f8b14079e8c2bae514d1242c9681ec77e00ba077334537d0e21febf", size = 5752631, upload-time = "2026-02-27T20:27:35.173Z" },
-    { url = "https://files.pythonhosted.org/packages/56/4a/0085e0d9a08b88e2c7b39a21473a63d723214bfbe09c71647c5c576815fe/aiolibsql-0.2.8-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae110a4bf815ea3630a53957fc924d7524e5e4648b889859cd1d0e044a674db2", size = 5454343, upload-time = "2026-02-27T20:27:37.751Z" },
-    { url = "https://files.pythonhosted.org/packages/58/8d/557a671925b19a3b4be5932433f3223f083732cf4f8be0f16b0dc1d9e638/aiolibsql-0.2.8-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:ec31e64e74157ed95f7fe4492616d22ebafe75d7251c6b39c263cba3424112b3", size = 5313929, upload-time = "2026-02-27T20:27:40.429Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/ba/542644013ec067262319955bee37ce061995198354d6c203508ba9305995/aiolibsql-0.2.8-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:a8e835a3354e9fb0d546747384c4c792c1c4673bff9a215b70315bcb8cc1d54a", size = 5653733, upload-time = "2026-02-27T20:27:42.965Z" },
-    { url = "https://files.pythonhosted.org/packages/27/8a/2139d46b95e292088aa37f287d0673abb28be7c6f26fc70c2095342d431b/aiolibsql-0.2.8-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:6c5cc069a90ab5fff1f65a696bc15614eaed0e5519aaa06ac0fd068147ef2c84", size = 5722295, upload-time = "2026-02-27T20:27:45.304Z" },
-    { url = "https://files.pythonhosted.org/packages/43/7a/d32c88662893b26ab6bbaa9b155759fb4a10df9f05ad6eb46eed67fff70e/aiolibsql-0.2.8-cp310-cp310-win_amd64.whl", hash = "sha256:a6648628c6920e0a0b0f1a4d2b899fb43103752446b6f06a25c8ab47cdcf5d3f", size = 4529126, upload-time = "2026-02-27T20:27:47.717Z" },
-    { url = "https://files.pythonhosted.org/packages/a8/22/a1e25120b28094ff879439aa8402bfa859129814eebbf3bc108abc74d02a/aiolibsql-0.2.8-cp311-cp311-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:992eb64f9b82b59364bd132348abe60da697f29d62834c804051b904189ba5de", size = 10060605, upload-time = "2026-02-27T20:27:50.192Z" },
-    { url = "https://files.pythonhosted.org/packages/52/39/9d8e5f242fd10ee505d042a3944fd2523e96a81571caf35c0359cd843735/aiolibsql-0.2.8-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:82feea1d52e181db15c0dc3f3cfd260d1234d3470fdc8966401705c1ebf91649", size = 5130249, upload-time = "2026-02-27T20:27:53.23Z" },
-    { url = "https://files.pythonhosted.org/packages/15/4e/b89fa8d8c1067292895059eba670cb1bf446ee69195ffbaa8d28572019a9/aiolibsql-0.2.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b8806b5de0ec552b3799e120ff3ceb93acb2d5ee6c987fc5cdf608d32a1ee2a9", size = 4957327, upload-time = "2026-02-27T20:27:55.411Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/3c/16ad91810e149257f4f31c6f470998d822e5f3a9f927302540dca5d6bf07/aiolibsql-0.2.8-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b7bb5578baa80c9d210ed4b5c8c002ad420ff9cbda1ecee8d212a2cd7f3fa002", size = 5751825, upload-time = "2026-02-27T20:27:57.904Z" },
-    { url = "https://files.pythonhosted.org/packages/59/cd/74c7a82117cdfca4fb46024bbbe2c111c7ece44278695bacfc8dc36892f1/aiolibsql-0.2.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fd38ad2c48a956adfa1d7b61ef43f6a257b2e70f0880ae5865e49fe8d66f5426", size = 5454424, upload-time = "2026-02-27T20:28:00.104Z" },
-    { url = "https://files.pythonhosted.org/packages/85/7e/cdc06d143f0b6e5a004eb04e6243f8385559ca80bd2e6acbb1e533d8876c/aiolibsql-0.2.8-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:92f44c8b63979f6d71edcc9fcc9f575b284703c623ec4c4320374f13a0413adf", size = 5314911, upload-time = "2026-02-27T20:28:02.596Z" },
-    { url = "https://files.pythonhosted.org/packages/af/6a/1a024bdbbfb4f6007e7022b944aa7d1e2e5489391fa77ac0c7bca129d0cf/aiolibsql-0.2.8-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:c0a06aa37fe2aa84e3caa99696d5a2ed450c20b295a549a462cc1452ed319045", size = 5653806, upload-time = "2026-02-27T20:28:05.116Z" },
-    { url = "https://files.pythonhosted.org/packages/9e/1b/8a5b2ee52363a58694b1fac6bfbbbe59224447dfb8832cbaa27c78b42a44/aiolibsql-0.2.8-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:7712c80f5fd118c9d1b8fddbc5be9d0f0408dcfd7ca48ce904bc5386e604c9e8", size = 5720779, upload-time = "2026-02-27T20:28:07.561Z" },
-    { url = "https://files.pythonhosted.org/packages/a6/6e/180cf534e4556551261cb1bb1c68408b7099cd1dffd86efcee78f8eca431/aiolibsql-0.2.8-cp311-cp311-win_amd64.whl", hash = "sha256:a5b45bf024a219b927e0f2e8a55b0a5c11bd7cde57f95a06a16c8155e327efc0", size = 4528885, upload-time = "2026-02-27T20:28:10.151Z" },
-    { url = "https://files.pythonhosted.org/packages/73/04/0bd8a5be0b9438a7b3884acf47c60319f5de21216dee51117547f856c74f/aiolibsql-0.2.8-cp312-cp312-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:5699ebf3294c967ec2d1905c6c7247c824ef8a83fa8a912e7e59441df5c2659c", size = 10047856, upload-time = "2026-02-27T20:28:12.718Z" },
-    { url = "https://files.pythonhosted.org/packages/b3/29/75540a6db01f537d8e9d0c3d876b1918d8ff463e688a88a5e4dcd317e95b/aiolibsql-0.2.8-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:bb44d0ca84fb3db349758464751feb76d8215e4dbc8c1c3b825513fb24034179", size = 5126460, upload-time = "2026-02-27T20:28:15.618Z" },
-    { url = "https://files.pythonhosted.org/packages/e0/31/bff96ef0cc3c202786489913fcf5ae6c91f2979cc3b4adb4cbde38d83114/aiolibsql-0.2.8-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:37e20e7cbbcc5e3d15cd561faf9d47ea9acf8046a6f8b90e4c667619a887a1b6", size = 4955587, upload-time = "2026-02-27T20:28:18.015Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/30/00931d329c21a0f34e6c4ec7bc51de3beb794d3995290dbbee374f848d7c/aiolibsql-0.2.8-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d9876009dfb1b1a6c58e30a860f7f9a17749b8bc273912c2333cc73a740d51be", size = 5758970, upload-time = "2026-02-27T20:28:20.604Z" },
-    { url = "https://files.pythonhosted.org/packages/59/65/014173806093c0d63918e9d6e94eefddb4b6fbceadb00d3e7f0a2cc76c5c/aiolibsql-0.2.8-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c2734c49a9e0302a1d87362c38e072ac5a17f5ca7494b3bed4f3ea1e27ae3e44", size = 5454924, upload-time = "2026-02-27T20:28:23.362Z" },
-    { url = "https://files.pythonhosted.org/packages/98/c0/dcc92553c1223cf41b28f778d6e2b26767807466130386c72b5c84076e07/aiolibsql-0.2.8-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:4e9706aa0f90de8e7602fcf125f4263cf73e44f0c1bb3b6229485cbbd60e2bb3", size = 5315198, upload-time = "2026-02-27T20:28:25.713Z" },
-    { url = "https://files.pythonhosted.org/packages/81/53/dbeb7be9a83723f7515b3c3600ae1ffe43333d9b38d237e0abf0b0ced320/aiolibsql-0.2.8-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:5cd42a6ff26994d5f36296a4fc28a5cdf1f6e1b2402c4160ee7341bcac2411ff", size = 4827220, upload-time = "2026-02-27T19:41:25.564Z" },
-    { url = "https://files.pythonhosted.org/packages/3b/43/5ec7abe4e0b11bf036317f2b3b43324249710b52c8d3689cc15ad3793b9c/aiolibsql-0.2.8-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:7d64f4827ffa3a6d4b4326e06b99b3f43f36b7110dbf2631165bf3d58ce5b0fd", size = 5657117, upload-time = "2026-02-27T20:28:28.863Z" },
-    { url = "https://files.pythonhosted.org/packages/fd/61/d6aafbec0122159f84f7155e8412afd8a5670bf7ca9e7bb7b2e990ba4f5c/aiolibsql-0.2.8-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d95392cf4a0bd4246457c97fdf22ccd872d9cafe30971b7aed6d7a05fdf36ec4", size = 5722448, upload-time = "2026-02-27T20:28:31.61Z" },
-    { url = "https://files.pythonhosted.org/packages/f8/5c/33ee439db8e8abfef2bb594bb34657ba9441176994df21c1bb101d266fe3/aiolibsql-0.2.8-cp312-cp312-win_amd64.whl", hash = "sha256:f5c7d90d0bfcf7552f9bec9d38969ae93fc15f2f4ed3083bfc8e6d29cec72ca8", size = 4537986, upload-time = "2026-02-27T20:28:34.186Z" },
-    { url = "https://files.pythonhosted.org/packages/9e/c6/05be9a9bcac9e9e263d6363055b9c00fd3c148fe2f2b8790e399873c8fbd/aiolibsql-0.2.8-cp313-cp313-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:2c9ada823de61c9c4a853ab33a076b9d833b7b4b2a526077a31556ce6213282c", size = 10047097, upload-time = "2026-02-27T20:28:36.789Z" },
-    { url = "https://files.pythonhosted.org/packages/20/c0/12a1aca6f4d56b5a66b9a326c2203b3c2eb98c3b3f63d02e3811228d8ce5/aiolibsql-0.2.8-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:c0c9021d260f14aba8778ffea91df008b735d102b3f10e407458112ac377a0ae", size = 5125846, upload-time = "2026-02-27T20:28:39.594Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/c4/0a78f5051add0c15e4855a1ee299250a97a9bf4c61062901e3bfdbdc724e/aiolibsql-0.2.8-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:1b6e114b0c4abd453875bef51ac159b5dcfd74b404983e750b223009e6f74825", size = 4955330, upload-time = "2026-02-27T20:28:42.588Z" },
-    { url = "https://files.pythonhosted.org/packages/93/b1/595d625cae78486ee87f2f2b4c8167418dfa45a87c4596bbc320148f3be2/aiolibsql-0.2.8-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b9ec6dd29621b7032f76fe865b951bc4c3f0adcc148ef76487f1108605d4a850", size = 5758696, upload-time = "2026-02-27T20:28:45.173Z" },
-    { url = "https://files.pythonhosted.org/packages/30/da/fd3630a956bc98faa06721f7f344664f54e7cbf21853ce5ef1e1012cbdc5/aiolibsql-0.2.8-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a86b806b2ce5b3f569ae7bae7a4500e1b29570cdb6c07c5ca2f622a0e56e4f49", size = 5454150, upload-time = "2026-02-27T20:28:47.439Z" },
-    { url = "https://files.pythonhosted.org/packages/77/86/a6325e536b3443b6d80a7468bbf697832ff08c53acedff78053d0e563a61/aiolibsql-0.2.8-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:19081ced402841403fd279b4d214e9a4a88329e29a5d5bce4f0c2838766f5f65", size = 5314969, upload-time = "2026-02-27T20:28:49.864Z" },
-    { url = "https://files.pythonhosted.org/packages/55/80/46cc90d1a9fbea1ea5d3ac267383880b6295f38c9072f02821ca5410e87f/aiolibsql-0.2.8-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:1a2caf6a63579152da2f9f869f1eec6b577cc650fe763db39564e17aa02140b4", size = 5657027, upload-time = "2026-02-27T20:28:52.527Z" },
-    { url = "https://files.pythonhosted.org/packages/ac/0b/1be3946b42c8835ad57e93b91e02afde1faa16422a36791c9d959d12a4dc/aiolibsql-0.2.8-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:f1fdb260e60cdf4f4cd417515e559b18c80a640d18b64ba424ae6c6e6c44f821", size = 5721965, upload-time = "2026-02-27T20:28:55.023Z" },
-    { url = "https://files.pythonhosted.org/packages/ad/52/4226d43cefdad76b2b3fa3c18d5ade54429c406e84d61aef4a87104a41ca/aiolibsql-0.2.8-cp313-cp313-win_amd64.whl", hash = "sha256:6c493ee6b0bbe0210061c42530432150ec07e793db25e5d6c8797797d058aaac", size = 4537667, upload-time = "2026-02-27T20:28:57.487Z" },
 ]
 
 [[package]]
@@ -637,11 +592,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.14"
+version = "3.15"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/05/b1/efac073e0c297ecf2fb33c346989a529d4e19164f1759102dee5953ee17e/idna-3.14.tar.gz", hash = "sha256:466d810d7a2cc1022bea9b037c39728d51ae7dad40d480fc9b7d7ecf98ba8ee3", size = 198272, upload-time = "2026-05-10T20:32:15.935Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/77/7b3966d0b9d1d31a36ddf1746926a11dface89a83409bf1483f0237aa758/idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc", size = 199245, upload-time = "2026-05-12T22:45:57.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/3c/3f62dee257eb3d6b2c1ef2a09d36d9793c7111156a73b5654d2c2305e5ce/idna-3.14-py3-none-any.whl", hash = "sha256:e677eaf072e290f7b725f9acf0b3a2bd55f9fd6f7c70abe5f0e34823d0accf69", size = 72184, upload-time = "2026-05-10T20:32:14.295Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/23/408243171aa9aaba178d3e2559159c24c1171a641aa83b67bdd3394ead8e/idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8", size = 72340, upload-time = "2026-05-12T22:45:55.733Z" },
 ]
 
 [[package]]
@@ -1077,8 +1032,8 @@ wheels = [
 
 [[package]]
 name = "py-cord"
-version = "2.8.0rc2.dev42+g9eba65b56"
-source = { git = "https://github.com/Pycord-Development/pycord#9eba65b564a9a4edd7161ed722587d0c9c8d1415" }
+version = "2.8.0rc2.dev43+gd8f80d45d"
+source = { git = "https://github.com/Pycord-Development/pycord#d8f80d45d328ff930adab05bb3da48f60f03e4ed" }
 dependencies = [
     { name = "aiohttp" },
     { name = "typing-extensions" },
@@ -1184,11 +1139,11 @@ wheels = [
 
 [[package]]
 name = "pyreadline3"
-version = "3.5.4"
+version = "3.5.6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0f/49/4cea918a08f02817aabae639e3d0ac046fef9f9180518a3ad394e22da148/pyreadline3-3.5.4.tar.gz", hash = "sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7", size = 99839, upload-time = "2024-09-19T02:40:10.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/6d/f94028646d7bbe6d9d873c47ee7c246f2d29129d253f0d96cb6fcab70733/pyreadline3-3.5.6.tar.gz", hash = "sha256:61e53218b99656091ddb077df9e71f25850e72e030b6183b39c9b7e6e4f4a9bf", size = 100368, upload-time = "2026-05-14T17:55:04.471Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/dc/491b7661614ab97483abf2056be1deee4dc2490ecbf7bff9ab5cdbac86e1/pyreadline3-3.5.4-py3-none-any.whl", hash = "sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6", size = 83178, upload-time = "2024-09-19T02:40:08.598Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/5e/35c856e186b74678c24927847ad9895a51f1bc02a0c6126477a6c6040064/pyreadline3-3.5.6-py3-none-any.whl", hash = "sha256:8449b734232e42a5dcd74048e39b60db2839a4c38cf3ae2bf7707d58b5389c0d", size = 85243, upload-time = "2026-05-14T17:55:03.262Z" },
 ]
 
 [[package]]
@@ -1249,7 +1204,6 @@ name = "v4"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "aiolibsql" },
     { name = "coloredlogs" },
     { name = "msgspec" },
     { name = "orjson" },
@@ -1261,7 +1215,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiolibsql", specifier = ">=0.2.8" },
     { name = "coloredlogs" },
     { name = "msgspec" },
     { name = "orjson", specifier = ">=3.11.9" },

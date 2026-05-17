@@ -1,7 +1,11 @@
 import asyncio
-import discord
 from discord.ext.commands import Cog
-from discord import ButtonStyle
+from discord import (
+    ButtonStyle,
+    Interaction,
+    InteractionType,
+    AutocompleteContext
+)
 from discord.enums import (
     SeparatorSpacingSize,
     InteractionContextType,
@@ -26,7 +30,7 @@ from models.user import UserData
 from models.interaction_raid import raidstate, raidtoken
 from contextlib import suppress
 
-class interactionraid(Cog):
+class _5(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.states = diskstore(
@@ -72,7 +76,7 @@ class interactionraid(Cog):
         ]
         return DesignerView(*components, timeout=None)
 
-    async def get_presets(self, ctx: discord.AutocompleteContext):
+    async def get_presets(self, ctx: AutocompleteContext):
         user = await db.get(ctx.interaction.user.id, UserData, ttl=5.0)
         options = ["thug"]
         options.extend([f"PRESET: {name}" for name in user.presets])
@@ -81,7 +85,7 @@ class interactionraid(Cog):
         return [o for o in options if val in o.lower()][:25]
 
     @command(
-        name="interacton-raid",
+        name="interaction-raid",
         description="raid for interaction tokens",
         contexts={
             InteractionContextType.guild,
@@ -144,8 +148,8 @@ class interactionraid(Cog):
         )
 
     @Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        if interaction.type != discord.InteractionType.component:
+    async def on_interaction(self, interaction: Interaction):
+        if interaction.type != InteractionType.component:
             return
             
         cid = interaction.custom_id
@@ -154,7 +158,7 @@ class interactionraid(Cog):
         elif cid == self.send_id:
             await self._handle_send(interaction)
 
-    async def _handle_farm(self, itx: discord.Interaction):
+    async def _handle_farm(self, itx: Interaction):
         store = self._get_store(itx.channel_id)
         t = raidtoken(
             id=str(itx.application_id),
@@ -183,7 +187,7 @@ class interactionraid(Cog):
                 )
             )
 
-    async def _handle_send(self, itx: discord.Interaction):
+    async def _handle_send(self, itx: Interaction):
         with suppress(Exception):
             await itx.response.defer(ephemeral=True)
 
@@ -229,17 +233,18 @@ class interactionraid(Cog):
         sem = asyncio.Semaphore(3)
 
         async def _dispatch(t: raidtoken):
-            async with sem:
-                with suppress(Exception):
-                    await self.bot.v4_webhook.send(
-                        ctx=itx,
-                        content=state.message if not state.bypass else None,
-                        silent=state.silent,
-                        view=view_payload,
-                        is_v2=state.bypass,
-                        application_id=t.id,
-                        token=t.token
-                    )
+            await sem.acquire()
+            with suppress(Exception):
+                await self.bot.v4_webhook.send(
+                    ctx=itx,
+                    content=state.message if not state.bypass else None,
+                    silent=state.silent,
+                    view=view_payload,
+                    is_v2=state.bypass,
+                    app_id=t.id,
+                    token=t.token
+                )
+            sem.release()
 
         tasks = [
             _dispatch(t)
@@ -249,4 +254,4 @@ class interactionraid(Cog):
         await asyncio.gather(*tasks)
 
 def setup(bot):
-    bot.add_cog(interactionraid(bot))
+    bot.add_cog(_5(bot))

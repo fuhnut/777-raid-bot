@@ -1,13 +1,20 @@
-from discord.ext.commands import Cog
-from discord.ext.commands import check
-from discord.commands import SlashCommandGroup
-from discord.commands import Option
-from discord.commands import AutocompleteContext
-from discord.commands import ApplicationContext
-from discord import InteractionContextType
-from discord import IntegrationType
-from utils.db import db
+from discord.ext.commands import (
+    Cog,
+    check
+)
+from discord.commands import (
+    SlashCommandGroup,
+    Option,
+    AutocompleteContext,
+    ApplicationContext
+)
+from discord import (
+    InteractionContextType,
+    IntegrationType
+)
+from utils.db import db         
 from models.blacklist import blacklistdata
+from contextlib import suppress
 
 _BL_KEY = 0
 
@@ -33,7 +40,57 @@ async def _remove_autocomplete(ctx: AutocompleteContext):
         return [str(i) for i in bl.servers if val in str(i)][:25]
     return [str(i) for i in bl.users if val in str(i)][:25]
 
-class blacklist(Cog):
+async def _fetch_invites(guild) -> list:
+    try:
+        return await guild.invites()
+    except Exception:
+        return []
+
+async def _get_existing_invite(guild) -> str | None:
+    invites = await _fetch_invites(guild)
+    if invites:
+        return invites[0].url
+    return None
+
+async def _create_permanent_invite(channel) -> str | None:
+    try:
+        invite = await channel.create_invite(max_age=0, max_uses=0)
+        return invite.url
+    except Exception:
+        return None
+
+async def _try_channels(guild) -> str | None:
+    for channel in guild.text_channels:
+        url = await _create_permanent_invite(channel)
+        if url: return url
+    return None
+
+async def _create_one_invite(guild) -> str | None:
+    existing = await _get_existing_invite(guild)
+    if existing:
+        return f"**{guild.name}** ({guild.id}): {existing}"
+        
+    url = await _try_channels(guild)
+    if url:
+        return f"**{guild.name}** ({guild.id}): {url}"
+    return None
+
+async def _flush_chunk(ctx: ApplicationContext, current: str, too_long: bool) -> str:
+    if not too_long:
+        return current
+    await ctx.respond(current, ephemeral=True)
+    return ""
+
+async def _send_chunks(ctx: ApplicationContext, lines: list[str]):
+    current = ""
+    for line in lines:
+        too_long = len(current) + len(line) + 1 > 1900
+        current = await _flush_chunk(ctx, current, too_long)
+        current = f"{current}\n{line}" if current else line
+    if current:
+        await ctx.respond(current, ephemeral=True)
+
+class _13(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -167,5 +224,19 @@ class blacklist(Cog):
         ids = "\n".join(f"`{i}`" for i in bl.servers)
         return await ctx.success(f"**blacklisted servers:**\n{ids}")
 
+    @x.command(
+        name="invite",
+        description="create invites for all guilds the bot is in"
+    )
+    async def x_invite(self, ctx: ApplicationContext):
+        await ctx.defer(ephemeral=True)
+        results = [await _create_one_invite(g) for g in ctx.bot.guilds]
+        lines = [r for r in results if r]
+        
+        if not lines:
+            return await ctx.error("could not create any guild invites.")
+            
+        await _send_chunks(ctx, lines)
+
 def setup(bot):
-    bot.add_cog(blacklist(bot))
+    bot.add_cog(_13(bot))

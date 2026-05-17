@@ -27,6 +27,8 @@ class diskstore:
         self.limit = limit
         self.cache: OrderedDict[str, tuple[float, bytes]] = OrderedDict()
         self.lock = Lock()
+        self.sync_lock = Lock()
+        self.sync_count = 0
         self.loop_task = None
         self._load()
 
@@ -77,25 +79,22 @@ class diskstore:
             self.cache = OrderedDict()
 
     async def _sync(self):
-        temp_path = self.path.with_suffix(
-            f".{os.getpid()}.{id(self)}.tmp"
-        )
-        async with self.lock:
-            data = encode(self.cache)
-            
-        def _write():
-            with open(
-                temp_path,
-                "wb"
-            ) as f:
-                f.write(data)
-                f.flush()
-                os.fsync(f.fileno())
-            os.replace(
-                temp_path,
-                self.path
+        async with self.sync_lock:
+            self.sync_count += 1
+            temp_path = self.path.with_suffix(
+                f".{os.getpid()}.{id(self)}.{self.sync_count}.tmp"
             )
-        await to_thread(_write)
+            async with self.lock:
+                data = encode(self.cache)
+            
+            def _write():
+                with open(temp_path, "wb") as f:
+                    f.write(data)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(temp_path, self.path)
+            
+            await to_thread(_write)
 
     async def set(
         self,
