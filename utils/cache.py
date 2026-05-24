@@ -1,29 +1,32 @@
 from __future__ import annotations
-import os
+
 import mmap
-import asyncio
+import os
+from asyncio import Lock, create_task, sleep, to_thread
+from collections import OrderedDict
+from pathlib import Path
 from time import time
 from typing import Any
-from asyncio import to_thread, Lock, sleep
-from pathlib import Path
-from msgspec.msgpack import encode, decode
 
-from collections import OrderedDict
+from utils.encoders import decode, encode
+
 
 class diskstore:
-    def __init__(
-        self,
-        filepath: str,
-        limit: int,
-        mode: str
-    ):
+    __slots__ = (
+        "path",
+        "limit",
+        "cache",
+        "lock",
+        "sync_lock",
+        "sync_count",
+        "loop_task",
+    )
+
+    def __init__(self, filepath: str, limit: int, mode: str):
         if not filepath.startswith("data/cache/"):
             filepath = f"data/cache/{filepath}"
         self.path = Path(filepath)
-        self.path.parent.mkdir(
-            parents=True,
-            exist_ok=True
-        )
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.limit = limit
         self.cache: OrderedDict[str, tuple[float, bytes]] = OrderedDict()
         self.lock = Lock()
@@ -35,9 +38,7 @@ class diskstore:
     async def _ensure_loop(self):
         if not self.loop_task:
             try:
-                self.loop_task = asyncio.create_task(
-                    self._flush_loop()
-                )
+                self.loop_task = create_task(self._flush_loop())
             except RuntimeError:
                 pass
 
@@ -46,10 +47,7 @@ class diskstore:
             await sleep(10.0)
             async with self.lock:
                 now = time()
-                expired = [
-                    k for k, v in self.cache.items()
-                    if v[0] < now
-                ]
+                expired = [k for k, v in self.cache.items() if v[0] < now]
                 for k in expired:
                     self.cache.pop(k, None)
             await self._sync()
@@ -58,20 +56,10 @@ class diskstore:
         if not self.path.exists() or self.path.stat().st_size == 0:
             return
         try:
-            fd = os.open(
-                self.path,
-                os.O_RDONLY
-            )
+            fd = os.open(self.path, os.O_RDONLY)
             try:
-                with mmap.mmap(
-                    fd,
-                    0,
-                    access=mmap.ACCESS_READ
-                ) as mm:
-                    data = decode(
-                        mm,
-                        type=dict[str, tuple[float, bytes]]
-                    )
+                with mmap.mmap(fd, 0, access=mmap.ACCESS_READ) as mm:
+                    data = decode(mm, type=dict[str, tuple[float, bytes]])
                     self.cache.update(data)
             finally:
                 os.close(fd)
@@ -86,39 +74,27 @@ class diskstore:
             )
             async with self.lock:
                 data = encode(self.cache)
-            
+
             def _write():
                 with open(temp_path, "wb") as f:
                     f.write(data)
                     f.flush()
                     os.fsync(f.fileno())
                 os.replace(temp_path, self.path)
-            
+
             await to_thread(_write)
 
-    async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: float
-    ) -> None:
+    async def set(self, key: str, value: Any, ttl: float) -> None:
         await self._ensure_loop()
         async with self.lock:
             if key in self.cache:
                 self.cache.move_to_end(key)
-            self.cache[key] = (
-                time() + ttl,
-                encode(value)
-            )
+            self.cache[key] = (time() + ttl, encode(value))
             if len(self.cache) > self.limit:
                 self.cache.popitem(last=False)
-        asyncio.create_task(self._sync())
+        create_task(self._sync())
 
-    async def get(
-        self,
-        key: str,
-        type_ref: Any
-    ) -> Any:
+    async def get(self, key: str, type_ref: Any) -> Any:
         await self._ensure_loop()
         async with self.lock:
             val = self.cache.get(key)
@@ -129,39 +105,28 @@ class diskstore:
                 self.cache.pop(key, None)
                 return None
             self.cache.move_to_end(key)
-            return decode(
-                data,
-                type=type_ref
-            )
+            return decode(data, type=type_ref)
 
-    async def get_all(
-        self,
-        type_ref: Any
-    ) -> list[Any]:
+    async def get_all(self, type_ref: Any) -> list[Any]:
         await self._ensure_loop()
         now = time()
         async with self.lock:
             return [
-                decode(
-                    v[1],
-                    type=type_ref
-                ) for v in self.cache.values()
-                if v[0] > now
+                decode(v[1], type=type_ref) for v in self.cache.values() if v[0] > now
             ]
 
-    async def delete(
-        self,
-        key: str
-    ) -> None:
+    async def delete(self, key: str) -> None:
         await self._ensure_loop()
         async with self.lock:
             self.cache.pop(key, None)
-        asyncio.create_task(self._sync())
+        create_task(self._sync())
 
     async def clear(self) -> None:
         await self._ensure_loop()
         async with self.lock:
             self.cache.clear()
+
             def _unlink():
                 self.path.unlink(missing_ok=True)
+
             await to_thread(_unlink)

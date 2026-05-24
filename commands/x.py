@@ -1,34 +1,35 @@
-from discord.ext.commands import (
-    Cog,
-    check
-)
-from discord.commands import (
-    SlashCommandGroup,
-    Option,
-    AutocompleteContext,
-    ApplicationContext
-)
-from discord import (
-    InteractionContextType,
-    IntegrationType
-)
-from utils.db import db         
-from models.blacklist import blacklistdata
 from contextlib import suppress
 
+from discord import IntegrationType, InteractionContextType
+from discord.commands import (
+    ApplicationContext,
+    AutocompleteContext,
+    Option,
+    SlashCommandGroup,
+)
+from discord.ext.commands import Cog, check
+
+from models.blacklist import blacklistdata
+from utils.db import db
+
 _BL_KEY = 0
+
 
 async def _load() -> blacklistdata:
     return await db.get(_BL_KEY, blacklistdata)
 
+
 async def _save(data: blacklistdata) -> None:
     await db.set(_BL_KEY, data)
+
 
 def _owner_check(ctx: ApplicationContext) -> bool:
     return ctx.user.id in ctx.bot.cfg.owners
 
+
 def owner_only():
     return check(_owner_check)
+
 
 async def _remove_autocomplete(ctx: AutocompleteContext):
     bl = getattr(ctx.interaction.client, "blacklist", None)
@@ -40,17 +41,20 @@ async def _remove_autocomplete(ctx: AutocompleteContext):
         return [str(i) for i in bl.servers if val in str(i)][:25]
     return [str(i) for i in bl.users if val in str(i)][:25]
 
+
 async def _fetch_invites(guild) -> list:
     try:
         return await guild.invites()
     except Exception:
         return []
 
+
 async def _get_existing_invite(guild) -> str | None:
     invites = await _fetch_invites(guild)
     if invites:
         return invites[0].url
     return None
+
 
 async def _create_permanent_invite(channel) -> str | None:
     try:
@@ -59,27 +63,32 @@ async def _create_permanent_invite(channel) -> str | None:
     except Exception:
         return None
 
+
 async def _try_channels(guild) -> str | None:
     for channel in guild.text_channels:
         url = await _create_permanent_invite(channel)
-        if url: return url
+        if url:
+            return url
     return None
+
 
 async def _create_one_invite(guild) -> str | None:
     existing = await _get_existing_invite(guild)
     if existing:
         return f"**{guild.name}** ({guild.id}): {existing}"
-        
+
     url = await _try_channels(guild)
     if url:
         return f"**{guild.name}** ({guild.id}): {url}"
     return None
+
 
 async def _flush_chunk(ctx: ApplicationContext, current: str, too_long: bool) -> str:
     if not too_long:
         return current
     await ctx.respond(current, ephemeral=True)
     return ""
+
 
 async def _send_chunks(ctx: ApplicationContext, lines: list[str]):
     current = ""
@@ -89,6 +98,7 @@ async def _send_chunks(ctx: ApplicationContext, lines: list[str]):
         current = f"{current}\n{line}" if current else line
     if current:
         await ctx.respond(current, ephemeral=True)
+
 
 class _13(Cog):
     def __init__(self, bot):
@@ -100,19 +110,16 @@ class _13(Cog):
         contexts={
             InteractionContextType.guild,
             InteractionContextType.bot_dm,
-            InteractionContextType.private_channel
+            InteractionContextType.private_channel,
         },
-        integration_types={
-            IntegrationType.guild_install,
-            IntegrationType.user_install
-        },
-        checks=[_owner_check]
+        integration_types={IntegrationType.guild_install, IntegrationType.user_install},
     )
 
-    @x.command(
-        name="add",
-        description="blacklist a user or server"
-    )
+    async def _check_owner(self, ctx: ApplicationContext) -> bool:
+        return ctx.user.id in ctx.bot.cfg.owners
+
+    @x.command(name="add", description="blacklist a user or server")
+    @check(lambda ctx: ctx.user.id in ctx.bot.cfg.owners)
     async def x_add(
         self,
         ctx: ApplicationContext,
@@ -121,14 +128,14 @@ class _13(Cog):
             name="type",
             description="user or server",
             choices=["user", "server"],
-            required=True
+            required=True,
         ),
         id: Option(
             str,
             name="id",
             description="the user or server id to blacklist",
-            required=True
-        )
+            required=True,
+        ),
     ):
         try:
             target_id = int(id)
@@ -152,10 +159,8 @@ class _13(Cog):
         ctx.bot.blacklist = bl
         return await ctx.success(f"blacklisted server `{target_id}`.")
 
-    @x.command(
-        name="remove",
-        description="remove a user or server from the blacklist"
-    )
+    @x.command(name="remove", description="remove a user or server from the blacklist")
+    @check(lambda ctx: ctx.user.id in ctx.bot.cfg.owners)
     async def x_remove(
         self,
         ctx: ApplicationContext,
@@ -164,15 +169,15 @@ class _13(Cog):
             name="type",
             description="user or server",
             choices=["user", "server"],
-            required=True
+            required=True,
         ),
         id: Option(
             str,
             name="id",
             description="the id to remove",
             autocomplete=_remove_autocomplete,
-            required=True
-        )
+            required=True,
+        ),
     ):
         try:
             target_id = int(id)
@@ -196,10 +201,8 @@ class _13(Cog):
         ctx.bot.blacklist = bl
         return await ctx.success(f"removed server `{target_id}` from blacklist.")
 
-    @x.command(
-        name="list",
-        description="list all blacklisted users or servers"
-    )
+    @x.command(name="list", description="list all blacklisted users or servers")
+    @check(lambda ctx: ctx.user.id in ctx.bot.cfg.owners)
     async def x_list(
         self,
         ctx: ApplicationContext,
@@ -208,8 +211,8 @@ class _13(Cog):
             name="type",
             description="user or server",
             choices=["user", "server"],
-            required=True
-        )
+            required=True,
+        ),
     ):
         bl = await _load()
 
@@ -224,19 +227,18 @@ class _13(Cog):
         ids = "\n".join(f"`{i}`" for i in bl.servers)
         return await ctx.success(f"**blacklisted servers:**\n{ids}")
 
-    @x.command(
-        name="invite",
-        description="create invites for all guilds the bot is in"
-    )
+    @x.command(name="invite", description="create invites for all guilds the bot is in")
+    @check(lambda ctx: ctx.user.id in ctx.bot.cfg.owners)
     async def x_invite(self, ctx: ApplicationContext):
         await ctx.defer(ephemeral=True)
         results = [await _create_one_invite(g) for g in ctx.bot.guilds]
         lines = [r for r in results if r]
-        
+
         if not lines:
             return await ctx.error("could not create any guild invites.")
-            
+
         await _send_chunks(ctx, lines)
+
 
 def setup(bot):
     bot.add_cog(_13(bot))

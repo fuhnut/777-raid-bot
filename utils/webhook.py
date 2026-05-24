@@ -4,6 +4,9 @@ import asyncio
 import logging
 
 class webhook:
+    """
+    webhook sending & deleting for raid commands.
+    """
     __slots__ = ("bot",)
 
     def __init__(self, bot):

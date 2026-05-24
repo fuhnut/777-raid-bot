@@ -1,6 +1,5 @@
 import time
 import psutil
-from discord import __version__
 from discord.ext.commands import Cog
 from discord.commands import (
     slash_command as command,
@@ -16,7 +15,8 @@ from discord.ui import (
 from discord import (
     ButtonStyle,
     InteractionContextType,
-    IntegrationType
+    IntegrationType,
+    __version__
 )
 
 class _1(Cog):

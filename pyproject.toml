@@ -7,9 +7,13 @@ requires-python = ">=3.10"
 dependencies = [
     "py-cord[speed] @ git+https://github.com/Pycord-Development/pycord",
     "msgspec",
-    "uvloop",
     "psutil",
     "coloredlogs",
     "zstandard",
     "orjson>=3.11.9",
+    "regex>=2026.5.9",
+    "aiohttp[speedups]",
 ]
+
+[project.optional-dependencies]
+unix = ["uvloop"]
