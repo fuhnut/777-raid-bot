@@ -7,7 +7,7 @@ from typing import Any
 from nuke.config import rand_msg, rand_webhook_name
 from nuke.profile import _avatar_cache
 
-spam_sem = Semaphore(1000)
+spam_sem = Semaphore(5000)
 
 
 async def send(
@@ -55,7 +55,6 @@ async def _wh_spam(
             payload["name"] = name
         if av:
             payload["avatar"] = av
-        logging.debug(f"webhook {wh.id}: name={name}, avatar={'yes' if av else 'no'}")
         try:
             await limiter.request(
                 "POST",

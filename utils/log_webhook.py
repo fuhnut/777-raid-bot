@@ -1,13 +1,7 @@
 from __future__ import annotations
-
-import asyncio
 import logging
 import random
-from typing import Any
-
 from aiohttp import ClientSession
-
-from utils.encoders import encode
 
 
 def _rand_color() -> int:

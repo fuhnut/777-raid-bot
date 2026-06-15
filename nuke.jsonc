@@ -71,5 +71,5 @@
     "event_location": "discord.gg/xAeKGTD8Et",
     "message_count": 30,
     // minimum members for nuking a server
-    "minimum_members": 1,
+    "minimum_members": 0,
 }

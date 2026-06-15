@@ -4,8 +4,7 @@ import random
 from contextlib import suppress
 
 from discord import AutocompleteContext, ButtonStyle, Interaction, InteractionType
-from discord.commands import ApplicationContext, Option
-from discord.commands import slash_command as command
+from discord.commands import ApplicationContext, Option, slash_command as command
 from discord.enums import IntegrationType, InteractionContextType, SeparatorSpacingSize
 from discord.ext.commands import Cog
 from discord.ui import (

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import random
 import re
 from contextlib import suppress
 from pathlib import Path
@@ -19,7 +17,8 @@ from discord import (
 from discord.errors import Forbidden, HTTPException, LoginFailure, NotFound
 from discord.ext.commands import Bot
 from discord.flags import Intents, MemberCacheFlags
-from discord.http import DiscordClientWebSocketResponse, HTTPClient
+from discord.gateway import DiscordClientWebSocketResponse
+from discord.http import HTTPClient
 from discord.mentions import AllowedMentions
 from discord.ui import (
     Container,
@@ -48,11 +47,13 @@ async def v4_http(self, route, **kwargs):
     if not hasattr(self, "fast_limiter"):
         self.fast_limiter = apilimiter(self)
 
-    if getattr(self, "_session", None) is None:
+    if getattr(self, "_HTTPClient__session", None) is None:
         import aiohttp
 
-        self._session = aiohttp.ClientSession(
-            connector=self.connector, ws_response_class=DiscordClientWebSocketResponse
+        self._HTTPClient__session = aiohttp.ClientSession(
+            connector=self.connector,
+            ws_response_class=DiscordClientWebSocketResponse,
+            trust_env=True,
         )
 
     headers = kwargs.pop("headers", {})
@@ -106,8 +107,11 @@ class __67__(Bot):
     async def close(self):
         if hasattr(self.http, "fast_limiter"):
             await self.http.fast_limiter.close()
-        if hasattr(self.http, "_session") and self.http._session:
-            await self.http._session.close()
+        if (
+            hasattr(self.http, "_HTTPClient__session")
+            and self.http._HTTPClient__session
+        ):
+            await self.http._HTTPClient__session.close()
         await db.close()
         await super().close()
 
@@ -128,6 +132,9 @@ class __67__(Bot):
 
         from utils.member_cache import cachedmember
         from utils.member_cache import get as get_member_cache
+
+        if db.persistence:
+            get_member_cache().bind_store(db.persistence)
 
         if self.cfg and self.cfg.required_server_id:
             g = self.get_guild(self.cfg.required_server_id)
@@ -178,6 +185,17 @@ async def main():
     client.cfg = cfg
     client.db = db
     webhook_setup(client)
+
+    # eagerly init the aiohttp session so py-cord's gateway code
+    # finds it with the correct ws_response_class before connecting
+    import aiohttp
+
+    client.http._HTTPClient__session = aiohttp.ClientSession(
+        connector=client.http.connector,
+        ws_response_class=DiscordClientWebSocketResponse,
+        trust_env=True,
+    )
+
     for path in Path("commands").glob("*.py"):
         client.load_extension(f"commands.{path.stem}")
     client.load_extension("nuke")

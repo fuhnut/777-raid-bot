@@ -13,6 +13,7 @@ dependencies = [
     "orjson>=3.11.9",
     "regex>=2026.5.9",
     "aiohttp[speedups]",
+    "lmdb>=2.2.0",
 ]
 
 [project.optional-dependencies]

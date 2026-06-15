@@ -100,7 +100,10 @@ async def create_many(
                     on_create(ch_id)
                 if on_threshold and done >= 50 and not ready.is_set():
                     on_threshold()
-        if done > 0 and not ready.is_set():
+        if done >= n and not ready.is_set():
             ready.set()
-        logging.info(f"nuke [{guild_id}]: channels created: {done}/{n}")
+
+    if not ready.is_set():
+        ready.set()
+
     return results

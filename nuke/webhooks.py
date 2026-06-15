@@ -68,7 +68,6 @@ async def spam(
             payload["name"] = name
         if av:
             payload["avatar"] = av
-        logging.debug(f"webhook {wh.id}: name={name}, avatar={'yes' if av else 'no'}")
         try:
             await limiter.request(
                 "POST",
@@ -107,7 +106,7 @@ async def create_many(
             elif not isinstance(w, Exception):
                 pass
         done = len(results)
-        logging.info(f"nuke [{guild_id}]: webhooks created: {done}/{len(channel_ids)}")
+
     return results
 
 

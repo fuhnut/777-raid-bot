@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-from time import perf_counter
 from discord.commands import (
     slash_command as command,
     ApplicationContext

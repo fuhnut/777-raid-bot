@@ -3,7 +3,6 @@ from discord import (
     ApplicationContext,
     InteractionType
 )
-import logging
 from discord.ext.commands import Cog
 from discord.commands import slash_command as command
 from discord.ui import (
@@ -20,7 +19,6 @@ from discord.ui import (
 )
 from discord import (
     ButtonStyle,
-    InteractionType,
     IntegrationType,
     InteractionContextType,
     InputTextStyle,
