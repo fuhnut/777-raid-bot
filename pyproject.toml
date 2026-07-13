@@ -6,7 +6,7 @@ readme = "README.mdx"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
-    { name = "Klaus" }
+    { name = "777" }
 ]
 keywords = ["discord", "bot", "pycord"]
 classifiers = [

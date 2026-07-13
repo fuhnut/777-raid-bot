@@ -16,3 +16,6 @@ wheels/
 cache/
 webhooks/
 isb/
+
+# Docs
+README.md
