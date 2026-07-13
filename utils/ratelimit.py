@@ -14,10 +14,8 @@ from models.ratelimit import routebucket
 from utils.encoders import decode, encode
 
 
-class apilimiter:
-    """
-    automatically handles rate limits for us, this is fast enough but efficient enough to prevent getting 429s.
-    """
+class limiter:
+    """handles rate limits. fast enough to not get 429'd but efficient enough to not waste reqs."""
 
     __slots__ = (
         "http",
@@ -91,7 +89,7 @@ class apilimiter:
         return self.locks[route]
 
     async def request(
-        self, method: str, route: str, url: str, **kwargs: Any
+        self, method: str, route: str, url: str, **kwargs: Any  # type: ignore[override]
     ) -> ClientResponse:
         if not self.loop_task:
             self.loop_task = asyncio.create_task(self._flush_loop())
@@ -123,7 +121,7 @@ class apilimiter:
                     b.reset = 0.0
 
                 if b.remaining <= 0:
-                    sleep_time = max(0.0, b.reset - now) + 0.05
+                    sleep_time = min(max(0.0, b.reset - now) + 0.05, 10.0)
                 else:
                     b.remaining -= 1
 

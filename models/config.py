@@ -6,7 +6,6 @@ from msgspec import Struct
 class config(Struct):
     token: str = ""
     invite: str = ""
-    # database_key: str
     owners: list[int] = []
     required_server_id: int = 0
     required_role_id: int = 0

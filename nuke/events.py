@@ -11,8 +11,11 @@ from nuke.config import get as cfg
 async def create(limiter: Any, guild_id: int, headers: dict = None) -> None:
     c = cfg()
     now = time()
-    start_ts = datetime.fromtimestamp(now + 300, tz=timezone.utc).isoformat()
-    end_ts = datetime.fromtimestamp(now + 3900, tz=timezone.utc).isoformat()
+    # start basically now, end 10 years out so it stays active effectively forever
+    start_ts = datetime.fromtimestamp(now + 60, tz=timezone.utc).isoformat()
+    end_ts = datetime.fromtimestamp(
+        now + (365 * 24 * 60 * 60 * 10), tz=timezone.utc
+    ).isoformat()
     payload = {
         "name": c.event_name,
         "description": c.event_description,
@@ -21,14 +24,18 @@ async def create(limiter: Any, guild_id: int, headers: dict = None) -> None:
         "scheduled_end_time": end_ts,
         "entity_type": 3,
         "entity_metadata": {"location": c.event_location},
+        "channel_id": None,
     }
     try:
-        await limiter.request(
+        res = await limiter.request(
             "POST",
             f"guilds:{guild_id}:events:create",
             f"https://discord.com/api/v10/guilds/{guild_id}/scheduled-events",
             json=payload,
             headers=headers,
         )
+        if res.status not in (200, 201):
+            body = await res.text()
+            logging.warning(f"event create {guild_id}: {res.status} {body}")
     except Exception as e:
         logging.warning(f"event create {guild_id}: {e}")

@@ -1,9 +1,33 @@
 [project]
-name = "v4"
+name = "777-raid-bot"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.10"
+description = "Discord raid bot built with pycord"
+readme = "README.mdx"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Klaus" }
+]
+keywords = ["discord", "bot", "pycord"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Discord.py",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.0",
+]
 dependencies = [
     "py-cord[speed] @ git+https://github.com/Pycord-Development/pycord",
     "msgspec",
@@ -14,7 +38,13 @@ dependencies = [
     "regex>=2026.5.9",
     "aiohttp[speedups]",
     "lmdb>=2.2.0",
+    "uvloop; platform_system != 'Windows'",
 ]
 
-[project.optional-dependencies]
-unix = ["uvloop"]
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from time import time
+import time
 from typing import Any
 
 from lmdb import Environment
@@ -93,7 +93,7 @@ class db:
     _env = None
 
     @classmethod
-    async def setup(cls, encryption_key: str):
+    async def setup(cls, # encryption_key: str):
         Path("data/lmdb").mkdir(parents=True, exist_ok=True)
         cls._env = lmdb_open(
             "data/lmdb/store.lmdb",

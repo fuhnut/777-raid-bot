@@ -14,6 +14,7 @@ from discord import (
     InteractionType,
     SeparatorSpacingSize,
 )
+from discord.enums import Status as discord_status
 from discord.errors import Forbidden, HTTPException, LoginFailure, NotFound
 from discord.ext.commands import Bot
 from discord.flags import Intents, MemberCacheFlags
@@ -36,16 +37,17 @@ from utils.db import db
 from utils.jsonc import load as jsonc_load
 from utils.log_webhook import send as log_send
 from utils.logger import setup as log_setup
-from utils.ratelimit import apilimiter
+from utils.ratelimit import limiter
 from utils.responses import setup as responses_setup
 from utils.webhook import setup as webhook_setup
 
 _link_re = re.compile(r"https?:\/\/[\w.-]+(?:\/[\w./?=&%-]*)?")
 
 
-async def v4_http(self, route, **kwargs):
+async def _v4_req(self, route, **kwargs):  # type: ignore[name-defined]
+    """monkeypatched discord request handler. we do this because pycord's internal rate limiter is trash lmao"""
     if not hasattr(self, "fast_limiter"):
-        self.fast_limiter = apilimiter(self)
+        self.fast_limiter = limiter(self)  # type: ignore[attr-defined]
 
     if getattr(self, "_HTTPClient__session", None) is None:
         import aiohttp
@@ -71,7 +73,7 @@ async def v4_http(self, route, **kwargs):
         if route.url.startswith("http")
         else f"https://discord.com/api/v10{route.url}"
     )
-    res = await self.fast_limiter.request(
+    res = await self.fast_limiter.request(  # type: ignore[attr-defined]
         route.method, route.bucket, url, headers=headers, **kwargs
     )
 
@@ -96,7 +98,7 @@ async def v4_http(self, route, **kwargs):
         raise HTTPException(res, data)
 
 
-HTTPClient.request = v4_http
+HTTPClient.request = _v4_req  # type: ignore[method-assign]
 
 
 class __67__(Bot):
@@ -124,8 +126,11 @@ class __67__(Bot):
             self.blacklist = await db.get(0, blacklistdata, ttl=None)
             await asyncio.sleep(2.5)  # should be higher?
 
+    async def on_connect(self):
+        logging.info("gateway websocket connected")
+
     async def on_ready(self):
-        logging.info(f"logged in as {self.user}")
+        logging.info(f"READY — logged in as {self.user} (id: {self.user.id})")
         invite_url = f"https://discord.com/oauth2/authorize?client_id={self.user.id}"
         logging.info(f"invite: {invite_url}")
         await update_bio(self)
@@ -164,6 +169,8 @@ async def main():
     responses_setup()
     log_setup()
 
+    Path("data/cache/ratelimits.bin").unlink(missing_ok=True)
+
     await db.setup("")
 
     intents = Intents.default()
@@ -178,27 +185,20 @@ async def main():
         intents=intents,
         chunk_guilds_at_startup=False,
         max_messages=0,
-        compress="zstd-stream",
         member_cache_flags=MemberCacheFlags.none(),
-        allowed_mentions=AllowedMentions.none(),
+        allowed_mentions=AllowedMentions.all(),
     )
+
+    @client.event
+    async def on_connect():
+        await client.change_presence(status=discord_status.invisible, activity=None)
+        logging.info("gateway: set status to invisible")
     client.cfg = cfg
     client.db = db
     webhook_setup(client)
 
-    # eagerly init the aiohttp session so py-cord's gateway code
-    # finds it with the correct ws_response_class before connecting
-    import aiohttp
-
-    client.http._HTTPClient__session = aiohttp.ClientSession(
-        connector=client.http.connector,
-        ws_response_class=DiscordClientWebSocketResponse,
-        trust_env=True,
-    )
-
     for path in Path("commands").glob("*.py"):
         client.load_extension(f"commands.{path.stem}")
-    client.load_extension("nuke")
 
     @client.event
     async def on_interaction(itx: Interaction):
@@ -268,7 +268,11 @@ async def main():
             }
             asyncio.create_task(log_send(webhook_url, payload))
 
-    await client.start(cfg.token)
+    try:
+        await client.start(cfg.token)
+    except Exception as e:
+        logging.exception(f"bot died during start: {e}")
+        raise
 
 
 if __name__ == "__main__":

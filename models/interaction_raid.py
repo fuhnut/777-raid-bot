@@ -1,6 +1,7 @@
 from __future__ import annotations
 from msgspec import Struct as struct
 
+
 class raidstate(
     struct,
     kw_only=True
@@ -10,6 +11,7 @@ class raidstate(
     silent: bool = False
     bypass: bool = False
     sent: int = 0
+
 
 class raidtoken(
     struct,

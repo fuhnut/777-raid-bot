@@ -190,6 +190,7 @@ _msgs: list[str] | None = None
 _names: list[str] | None = None
 _roles: list[str] | None = None
 _channels: list[str] | None = None
+_categories: list[str] | None = None
 
 
 def get() -> nukecfg:
@@ -204,6 +205,14 @@ def rand_channel() -> str:
     if _channels is None:
         _channels = get().channel_names
     return random.choice(_channels)
+
+
+def rand_category() -> str:
+    global _categories
+    if _categories is None:
+        cfg = get()
+        _categories = cfg.category_names if cfg.category_names else cfg.channel_names
+    return random.choice(_categories)
 
 
 def rand_role() -> str:

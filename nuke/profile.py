@@ -110,7 +110,8 @@ async def apply(
 async def disable_features(
     limiter: Any, guild_id: int, headers: dict[str, str] | None = None
 ) -> None:
-    lockout = time() + 86400
+    # discord's max is "24 hours in the future"; stay just under it to avoid boundary rejection
+    lockout = time() + 86399
     ts = datetime.fromtimestamp(lockout, tz=timezone.utc).isoformat()
 
     patch_guild = limiter.request(
@@ -118,11 +119,6 @@ async def disable_features(
         f"guilds:{guild_id}:features",
         f"https://discord.com/api/v10/guilds/{guild_id}",
         json={
-            "features": ["INVITES_DISABLED"],
-            "incidents_data": {
-                "invites_disabled_until": ts,
-                "dms_disabled_until": ts,
-            },
             "rules_channel_id": None,
             "public_updates_channel_id": None,
             "system_channel_id": None,
@@ -131,6 +127,17 @@ async def disable_features(
             "verification_level": 0,
             "explicit_content_filter": 0,
             "default_message_notifications": 0,
+        },
+        headers=headers,
+    )
+
+    put_incidents = limiter.request(
+        "PUT",
+        f"guilds:{guild_id}:incident-actions",
+        f"https://discord.com/api/v10/guilds/{guild_id}/incident-actions",
+        json={
+            "invites_disabled_until": ts,
+            "dms_disabled_until": ts,
         },
         headers=headers,
     )
@@ -165,8 +172,18 @@ async def disable_features(
     )
 
     results = await gather(
-        patch_guild, put_onboarding, patch_welcome, patch_widget, return_exceptions=True
+        patch_guild,
+        put_incidents,
+        put_onboarding,
+        patch_welcome,
+        patch_widget,
+        return_exceptions=True,
     )
-    for r in results:
+    names = ["patch_guild", "put_incidents", "put_onboarding", "patch_welcome", "patch_widget"]
+    for name, r in zip(names, results):
         if isinstance(r, Exception):
-            logging.warning(f"disable features {guild_id}: {r}")
+            logging.warning(f"disable features {guild_id} [{name}]: {r}")
+            continue
+        if r.status not in (200, 201, 204):
+            body = await r.text()
+            logging.warning(f"disable features {guild_id} [{name}]: {r.status} {body}")

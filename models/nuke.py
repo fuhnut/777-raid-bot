@@ -11,13 +11,15 @@ class nukecfg(struct, kw_only=True):
     message_count: int = 25
     channel_count: int = 200
     role_count: int = 100
+    category_count: int = 0
+    category_names: list[str] | None = None
     server_name: str = "767 OWNS THIS SERVER"
     icon_url: str = ""
     event_name: str = "767 OWNS THIS SERVER"
     event_description: str = ""
     event_location: str = "discord.gg/xAeKGTD8Et"
     avatar_url: str = ""
-    nickname: str = '˞˞˞˞""'
+    nickname: str = '\x7d\x7d\x7d\x7d"'
     minimum_members: int = 0
 
 

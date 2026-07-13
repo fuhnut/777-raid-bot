@@ -89,7 +89,7 @@ class webhook:
             return None
 
 def setup(bot):
-    from utils.ratelimit import apilimiter
+    from utils.ratelimit import limiter
     if not hasattr(bot.http, "fast_limiter"):
-        bot.http.fast_limiter = apilimiter(bot.http)
+        bot.http.fast_limiter = limiter(bot.http)
     bot.v4_webhook = webhook(bot)

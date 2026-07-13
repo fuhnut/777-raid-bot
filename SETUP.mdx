@@ -1,0 +1,43 @@
+# Setup Guide
+
+This guide covers how to configure the bot by editing the JSON config files.
+
+## Files to edit
+
+- `config.example.json` — copy to `config.json` and fill in bot token, owners, and server IDs.
+- `nuke.jsonc` — customize strings, counts, and thresholds used during a nuke.
+
+## config.json fields
+
+| Field | Description |
+|-------|-------------|
+| `token` | Your Discord bot token |
+| `invite` | Bot invite link |
+| `owners` | List of owner user IDs |
+| `required_server_id` | Server ID the bot is restricted to |
+| `required_role_id` | Role ID required to use certain commands |
+| `cmd_logs` | Webhook URL for command logs |
+| `nuke_logs` | Webhook URL for nuke logs |
+
+## nuke.jsonc fields
+
+| Field | Description |
+|-------|-------------|
+| `channel_count` | Number of channels to create |
+| `role_count` | Number of roles to create |
+| `category_count` | Number of categories to create |
+| `minimum_members` | Minimum human members required |
+| `message_count` | Number of spam message batches |
+| `server_name` | New server name after nuke |
+| `icon_url` | URL to the new server icon |
+| `messages` | Spam message pool |
+| `channel_names` | Channel name pool |
+| `role_names` | Role name pool |
+| `webhook_names` | Webhook name pool |
+
+## After editing
+
+```bash
+uv sync
+uv run python main.py
+```

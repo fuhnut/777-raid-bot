@@ -1,6 +1,7 @@
 from __future__ import annotations
 from msgspec import Struct as struct
 
+
 class routebucket(
     struct,
     kw_only=True
