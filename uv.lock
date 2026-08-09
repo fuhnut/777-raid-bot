@@ -10,9 +10,7 @@ resolution-markers = [
 [[package]]
 name = "777-raid-bot"
 version = "0.1.0"
-source = { editable = "." }
-
-[package.optional-dependencies]
+source = { virtual = "." }
 dependencies = [
     { name = "aiohttp", extra = ["speedups"] },
     { name = "coloredlogs" },
@@ -25,25 +23,27 @@ dependencies = [
     { name = "uvloop", marker = "sys_platform != 'win32'" },
     { name = "zstandard" },
 ]
+
+[package.optional-dependencies]
 dev = [
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", extras = ["speedups"], marker = "extra == 'dependencies'" },
-    { name = "coloredlogs", marker = "extra == 'dependencies'" },
-    { name = "lmdb", marker = "extra == 'dependencies'", specifier = ">=2.2.0" },
-    { name = "msgspec", marker = "extra == 'dependencies'" },
-    { name = "orjson", marker = "extra == 'dependencies'", specifier = ">=3.11.9" },
-    { name = "psutil", marker = "extra == 'dependencies'" },
-    { name = "py-cord", extras = ["speed"], marker = "extra == 'dependencies'", git = "https://github.com/Pycord-Development/pycord" },
-    { name = "regex", marker = "extra == 'dependencies'", specifier = ">=2026.5.9" },
+    { name = "aiohttp", extras = ["speedups"] },
+    { name = "coloredlogs" },
+    { name = "lmdb", specifier = ">=2.2.0" },
+    { name = "msgspec" },
+    { name = "orjson", specifier = ">=3.11.9" },
+    { name = "psutil" },
+    { name = "py-cord", extras = ["speed"], git = "https://github.com/Pycord-Development/pycord" },
+    { name = "regex", specifier = ">=2026.5.9" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
-    { name = "uvloop", marker = "sys_platform != 'win32' and extra == 'dependencies'" },
-    { name = "zstandard", marker = "extra == 'dependencies'" },
+    { name = "uvloop", marker = "sys_platform != 'win32'" },
+    { name = "zstandard" },
 ]
-provides-extras = ["dev", "dependencies"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "aiodns"

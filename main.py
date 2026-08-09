@@ -171,7 +171,7 @@ async def main():
 
     Path("data/cache/ratelimits.bin").unlink(missing_ok=True)
 
-    await db.setup("")
+    await db.setup()
 
     intents = Intents.default()
     intents.guilds = True

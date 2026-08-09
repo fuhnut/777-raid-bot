@@ -93,7 +93,7 @@ class db:
     _env = None
 
     @classmethod
-    async def setup(cls, # encryption_key: str):
+    async def setup(cls):
         Path("data/lmdb").mkdir(parents=True, exist_ok=True)
         cls._env = lmdb_open(
             "data/lmdb/store.lmdb",
