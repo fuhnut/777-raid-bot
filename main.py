@@ -7,7 +7,6 @@ from contextlib import suppress
 from pathlib import Path
 from urllib.parse import quote
 
-import uvloop
 from discord import (
     ApplicationContext,
     Interaction,
@@ -30,7 +29,6 @@ from discord.ui import (
 )
 
 from models.blacklist import blacklistdata
-from models.config import config
 from models.config import config as cfg_type
 from utils.bio import update_bio
 from utils.db import db
@@ -45,7 +43,6 @@ _link_re = re.compile(r"https?:\/\/[\w.-]+(?:\/[\w./?=&%-]*)?")
 
 
 async def _v4_req(self, route, **kwargs):  # type: ignore[name-defined]
-    """monkeypatched discord request handler. we do this because pycord's internal rate limiter is trash lmao"""
     if not hasattr(self, "fast_limiter"):
         self.fast_limiter = limiter(self)  # type: ignore[attr-defined]
 
@@ -118,6 +115,7 @@ class __67__(Bot):
         await super().close()
 
     async def setup_hook(self):
+        logging.info("setup_hook called")
         self.blacklist = blacklistdata()
         self.loop.create_task(self._refresh_blacklist())
 
@@ -160,7 +158,13 @@ class __67__(Bot):
                     logging.warning(f"membercache: failed to preload {g.name}: {e}")
 
         for cmd in self.application_commands:
-            logging.info(f"synced command: /{cmd.name}")
+            logging.info(f"Loaded command: /{cmd.name}")
+
+        try:
+            await self.sync_commands()
+        except Exception as e:
+            logging.error(f"sync error: {e}")
+            raise
 
 
 async def main():
@@ -173,13 +177,7 @@ async def main():
 
     await db.setup()
 
-    intents = Intents.default()
-    intents.guilds = True
-    intents.members = True
-    intents.voice_states = False
-    intents.presences = False
-    intents.messages = False
-    intents.message_content = False
+    intents = Intents(guilds=True, members=True)
     client = __67__(
         command_prefix="!",
         intents=intents,
@@ -187,18 +185,27 @@ async def main():
         max_messages=0,
         member_cache_flags=MemberCacheFlags.none(),
         allowed_mentions=AllowedMentions.all(),
+        auto_sync_commands=True,
     )
+
+    client.cfg = cfg
+    client.db = db
+    webhook_setup(client)
 
     @client.event
     async def on_connect():
         await client.change_presence(status=discord_status.invisible, activity=None)
         logging.info("gateway: set status to invisible")
-    client.cfg = cfg
-    client.db = db
-    webhook_setup(client)
 
+    # Load extensions before starting
     for path in Path("commands").glob("*.py"):
-        client.load_extension(f"commands.{path.stem}")
+        if path.stem == "__init__":
+            continue
+        try:
+            client.load_extension(f"commands.{path.stem}")
+            logging.info(f"loaded extension: commands.{path.stem}")
+        except Exception as e:
+            logging.exception(f"failed to load extension commands.{path.stem}: {e}")
 
     @client.event
     async def on_interaction(itx: Interaction):

@@ -1,7 +1,6 @@
-from __future__ import annotations
 from discord.commands import (
-    slash_command as command,
-    ApplicationContext
+    ApplicationContext,
+    slash_command as command
 )
 from discord.enums import (
     InteractionContextType,
@@ -26,7 +25,7 @@ class _6(Cog):
             IntegrationType.user_install
         }
     )
-    async def ping(self, ctx: ApplicationContext):
+    async def ping_cmd(self, ctx: ApplicationContext):
         from contextlib import suppress
         from time import perf_counter
         start = perf_counter()

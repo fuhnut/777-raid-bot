@@ -47,7 +47,7 @@ class _1(Cog):
         
         stats = (
             "about bot\n\n"
-            f"**pycord ver** {__version__}\n"
+            f"**pycord ver** {__version__.split('rc')[0].split('dev')[0].split('+')[0]}\n"
             f"**uptime:** {int(h)}h {int(m)}m {int(s)}s\n"
             f"**cpu:** {cpu}%\n"
             f"**ram:** {ram:.2f} mb"

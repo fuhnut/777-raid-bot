@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import asyncio
 import re
@@ -117,9 +116,9 @@ class _9(Cog):
         silent: Option(
             bool, name="silent", description="send as silent msg?", default=False
         ),
-        # bypass_automod: Option(
-        #     bool, name="bypass_automod", description="bypass automod?", default=False
-        # ), commented out for reasons.
+        bypass_automod: Option(
+            bool, name="bypass_automod", description="bypass automod?", default=False
+        ),
     ):
         state = raidstate(message="", silent=silent, bypass=False)
         await self.states.set(f"{ctx.channel_id}:{ctx.user.id}", state, 3600.0)
