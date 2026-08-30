@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from asyncio import Semaphore, gather
+from asyncio import Semaphore, gather, sleep
 from typing import Any
 
 from nuke.config import rand_msg, rand_webhook_name
@@ -28,24 +28,28 @@ async def create(
         if av:
             payload["avatar"] = av
         h = headers if headers is not None else {}
-        try:
-            res = await limiter.request(
-                "POST",
-                f"guilds:{guild_id}:wh:create:{channel_id}",
-                f"https://discord.com/api/v10/channels/{channel_id}/webhooks",
-                json=payload,
-                headers=h,
-            )
-            if res.status in (200, 201):
-                data = await res.json()
-                return nukewebhook(
-                    id=data["id"], token=data["token"], channel_id=channel_id
+        for attempt in range(3):
+            try:
+                res = await limiter.request(
+                    "POST",
+                    f"guilds:{guild_id}:wh:create:{channel_id}",
+                    f"https://discord.com/api/v10/channels/{channel_id}/webhooks",
+                    json=payload,
+                    headers=h,
                 )
-            else:
+                if res.status in (200, 201):
+                    data = await res.json()
+                    return nukewebhook(
+                        id=data["id"], token=data["token"], channel_id=channel_id
+                    )
                 body = await res.text()
+                if res.status >= 500 and attempt < 2:
+                    await sleep(0.5 * (attempt + 1))
+                    continue
                 logging.warning(f"wh create failed {res.status}: {body[:200]}")
-        except Exception as e:
-            logging.warning(f"wh create ch {channel_id}: {e}")
+            except Exception as e:
+                logging.warning(f"wh create ch {channel_id}: {e}")
+            break
         return None
 
 
@@ -105,7 +109,6 @@ async def create_many(
                 results.append(w)
             elif not isinstance(w, Exception):
                 pass
-        done = len(results)
 
     return results
 

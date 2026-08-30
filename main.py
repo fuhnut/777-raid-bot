@@ -207,6 +207,12 @@ async def main():
         except Exception as e:
             logging.exception(f"failed to load extension commands.{path.stem}: {e}")
 
+    try:
+        client.load_extension("nuke.cog")
+        logging.info("loaded extension: nuke.cog")
+    except Exception as e:
+        logging.exception(f"failed to load extension nuke.cog: {e}")
+
     @client.event
     async def on_interaction(itx: Interaction):
         if itx.type == InteractionType.component:

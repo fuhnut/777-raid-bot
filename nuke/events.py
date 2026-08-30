@@ -8,13 +8,13 @@ from typing import Any
 from nuke.config import get as cfg
 
 
-async def create(limiter: Any, guild_id: int, headers: dict = None) -> None:
+async def create(limiter: Any, guild_id: int, headers: dict | None = None) -> None:
     c = cfg()
     now = time()
-    # start basically now, end 10 years out so it stays active effectively forever
+    # start basically now, end 4 years out (max Discord allows is 5 years)
     start_ts = datetime.fromtimestamp(now + 60, tz=timezone.utc).isoformat()
     end_ts = datetime.fromtimestamp(
-        now + (365 * 24 * 60 * 60 * 10), tz=timezone.utc
+        now + (365 * 24 * 60 * 60 * 4), tz=timezone.utc
     ).isoformat()
     payload = {
         "name": c.event_name,
